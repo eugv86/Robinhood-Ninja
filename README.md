@@ -1,11 +1,12 @@
 
-#Robinhood Ninja
+# Robinhood Ninja
 
 A front-end web app built with [Polymer 2.0](https://www.polymer-project.org) components. The unofficial Robinhood API documentation is used from [here](https://github.com/sanko/Robinhood). 
 
 ![screenshot](https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/RobinhoodNinja_V1.jpg?alt=media&token=514cac95-3857-47cb-a202-5ad4db954d62)
 
-*If you feel like setting this up locally;
+
+# If you feel like setting this up locally;
 ### Clone
 
    $ git clone  https://github.com/eugv86/Robinhood-Ninja
