@@ -23,6 +23,7 @@
     "iron-icons": "PolymerElements/iron-icons#^2.0.1",
     "chart.js": "^2.7.0",
     "moment": "^2.18.1",
+    "xhook": "jpillora/xhook",
     "resize-aware": "^2.0.0",
     "iron-list": "PolymerElements/iron-list#^2.0.8",
     "chartjs-plugin-annotation": "chartjs/chartjs-plugin-annotation#^0.5.5",
