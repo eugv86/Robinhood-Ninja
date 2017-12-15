@@ -1,4 +1,6 @@
 
+![screenshot](https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/RobinhoodNinja_V1.jpg?alt=media&token=514cac95-3857-47cb-a202-5ad4db954d62)
+
 ### Setup
 
 ##### Prerequisites
