@@ -1,7 +1,7 @@
 
 # Robinhood Ninja
 
-A front-end web app built using [Polymer 2.0](https://www.polymer-project.org) components. It's hosted on Firebase Hosting and uses a NodeJS reverse proxy [CORS Anywhere](https://github.com/Rob--W/cors-anywhere) hosted on Amazon AWS EC2 NodeJS instance to redirect calls to api.robinhood.com. 
+A front-end web app built using [Polymer 2.0](https://www.polymer-project.org) components. It's hosted on Firebase Hosting and uses a NodeJS reverse proxy [CORS Anywhere](https://github.com/Rob--W/cors-anywhere) hosted on Amazon AWS EC2 instance to redirect calls to api.robinhood.com. 
 
 Unofficial Robinhood API documentation: https://github.com/sanko/Robinhood 
 
@@ -18,7 +18,7 @@ Unofficial Robinhood API documentation: https://github.com/sanko/Robinhood
 ##### Prerequisites
 
 First, install [Polymer CLI](https://github.com/Polymer/polymer-cli) using
-[npm](https://www.npmjs.com) (we assume you have pre-installed [node.js](https://nodejs.org)).
+[npm](https://www.npmjs.com) (assuming you have pre-installed [node.js](https://nodejs.org)).
 
     npm install -g polymer-cli
 
