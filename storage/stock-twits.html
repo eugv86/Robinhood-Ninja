@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html style="height:100%">
+
+<body style="height:100%;margin:0;padding:0px;overflow:hidden;">
+  
+<div style="height:100%">
+<script>
+ var qs = (function(a) {
+        if (a == "") return {};
+        var b = {};
+        for (var i = 0; i < a.length; ++i)
+        {
+            var p=a[i].split('=', 2);
+            if (p.length == 1)
+                b[p[0]] = "";
+            else
+                b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+        }
+        return b;
+        })(window.location.search.substr(1).split('&'));
+    
+
+</script>
+    <h2 style="margin-top:0" id="title">StockTwits:</h2>
+    <div id="stocktwits-widget-news" class="scrollContainer"></div><a href='https://stocktwits.com' style='font-size: 0px;'>StockTwits</a>
+    <script type="text/javascript" src="https://api.stocktwits.com/addon/widget/2/widget-loader.min.js"></script>
+    <script type="text/javascript">
+        document.getElementById("title").innerHTML = "StockTwits: " + qs["symbol"];
+
+        STWT.Widget({container: 'stocktwits-widget-news', 
+        symbol: qs["symbol"], 
+        width: document.body.clientWidth, 
+        height: '2400', 
+        limit: '30', 
+        scrollbars: 0, 
+        streaming: 1, 
+        avatars: 0,
+        header: 0,
+        title: 'StockTwits:' + qs["symbol"], 
+        style: {
+                link_color: '4871a8', 
+                link_hover_color: '4871a8', 
+                header_text_color: '000000', 
+                border_color: 'ffffff', 
+                divider_color: 'ffffff', 
+                divider_color: 'ffffff', 
+                divider_type: 'solid', 
+                box_color: 'ffffff', 
+                stream_color: 'ffffff', 
+                text_color: '000000', 
+                time_color: '616161',
+                username_color: '30CD9A',
+                username_size: '15',
+                link_ticker_color: '000000' ,
+                font_size: '15',
+                border_color: 'ffffff',
+                border_color_2: 'ffffff',
+                link_color :'f45531'
+
+
+            }
+        });
+    </script>
+    
+
+  </div>
+
+
+
+<style>
+  .scrollContainer {
+    overflow:auto; 
+    overflow-x:hidden; 
+    height:calc(100% - 38px);
+
+    animation: fadein 1.5s;
+    -moz-animation: fadein 1.5s; /* Firefox */
+    -webkit-animation: fadein 1.5s; /* Safari and Chrome */
+    -o-animation: fadein 1.5s; /* Opera */
+  }
+
+    @keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+    @-moz-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+    @-webkit-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+    @-o-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+
+  .scrollContainer:hover::-webkit-scrollbar-thumb{
+    background-color: #30CD9A;
+  }
+
+  .list-item{
+    margin: 5px 10px;
+    padding-bottom: 5px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 13px;
+  }
+  
+  ::-webkit-scrollbar-button {
+    background: white; 
+  }
+
+
+  ::-webkit-scrollbar-track-piece{
+    background: white; 
+    /* border-right: 5px solid #1A1E24; */
+
+  }
+  ::-webkit-scrollbar-thumb {
+    background: white;
+    border-left:8px solid white;
+  
+  }
+</style>
+</body>
+</html>

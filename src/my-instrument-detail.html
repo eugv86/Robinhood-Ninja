@@ -1,0 +1,662 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-overlay-behavior/iron-overlay-backdrop.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+
+
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="simple-tracker.html">
+<link rel="import" href="my-stock-news.html">
+<link rel="import" href="my-stock-order.html">
+
+<script src="../bower_components/moment/moment.js"></script>
+<script src="../bower_components/chart.js/dist/Chart.min.js"></script>
+
+<dom-module id="my-instrument-detail">
+  <template>
+
+    <simple-tracker id="googleanalytics"></simple-tracker>
+
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 20px 50px;
+        --paper-dialog-background-color:rgba(0, 0, 0, 0.6);
+      }
+
+      .fundimental_box {
+        max-width: 200px
+      }
+
+      h3 {
+        margin-top:0px
+      }
+
+      .border1 {
+        width: 100%;
+        height: 1px;
+        background-color: #363F43;
+        margin: 15px 0 15px;
+      }
+
+      .border2 {
+        width:100%; height:1px; background-color:#363F43; margin: 20px 0 15px;
+      }
+
+      .menu-button{
+        /* background-color:#30CD9A; */
+        color:white;
+        padding:10px 2px;
+        font-size: 14px;
+        line-height: .8;
+        min-width: 30px;
+        border-bottom: 2px solid white;
+        border-radius: 0;
+        margin-right:10px;
+      }
+
+      paper-button[isenabled=false] {
+        opacity: 0.65; 
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+    </style>
+
+    <iron-ajax auto id="quoteajax"
+        url="[[quoteurl]]"
+        headers= '{{headers}}'
+        handle-as="json"
+        last-response="{{quote}}">
+    </iron-ajax>
+
+    <iron-ajax auto id="instrumentajax"
+        url="[[quote.instrument]]"
+        headers= '{{headers}}'
+        handle-as="json"
+        last-response="{{instrument}}">
+    </iron-ajax>
+
+    <iron-ajax auto id="fundamentalsjax"
+        url="[[instrument.fundamentals]]"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{fundamentals}}">
+    </iron-ajax>
+
+    <iron-ajax auto id="historicalsjax"
+        url="[[histquoteurl]]"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{historicals}}">
+    </iron-ajax>
+
+
+<div class="flex layout vertical">
+    <div class="layout horizontal">
+      <div class="">
+          <div class="horizontal start-justified layout">
+            <div>
+              <!-- Regular Hours -->
+              <template is="dom-if" if="{{!quote.last_extended_hours_trade_price}}">
+                <div large>${{_round(quote.last_trade_price)}}</div>
+                <div small change$="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}">{{_calcChange(quote.last_trade_price, quote.previous_close)}} Today</div>
+              </template>
+
+              <!-- After Hours -->
+              <template is="dom-if" if="{{quote.last_extended_hours_trade_price}}">
+                <div large>${{_round(quote.last_extended_hours_trade_price)}}</div>
+                <div small change$="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}">{{_calcChange(quote.last_trade_price, quote.previous_close)}} Today</div>
+                <div small >{{_calcChange(quote.last_extended_hours_trade_price, quote.last_trade_price)}} After Hours</div>
+              </template>
+            </div>
+          </div>
+      </div>
+
+      <!-- Menu Buttons -->
+      <div class="flex layout horizontal self-end" style="margin-left:20px;">
+          <paper-button class="menu-button" on-tap='_menuClick' data-id="stockNewsDialog" data-elementID="stockNews">News</paper-button>
+          <paper-button class="menu-button" style="text-transform:none" on-tap='_openDialog' data-id="stockTwitsDialog" data-elementID="stockTwits">StockTwits</paper-button>          
+        </div>
+      <!--  -->
+
+      <div class="vertical layout self-end">
+          <div medium class="horizontal layout end-justified">{{quote.symbol}}</div>
+          <div secondary>{{instrument.name}}</div>
+          <!-- <div style="width:200px; text-overflow: ellipsis;white-space: nowrap;overflow: hidden; text-align:right">{{instrument.name}}</div> -->
+      </div>
+    </div>
+
+    <!-- Border -->
+    <div class="border1"></div>
+    
+    <!-- Chart for stock -->
+    <div class="flex" id="chartWrap">
+      <canvas id="myChart" width="100" height="100"></canvas>
+    </div>
+
+    <div class="layout center-justified horizontal ">
+      <paper-tabs id="chartSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:390px" >
+        <paper-tab q="span=day&interval=5minute&bounds=trading">1D</paper-tab>
+        <paper-tab q="span=week&interval=10minute&bounds=regular">1W</paper-tab>
+        <!-- <paper-tab q="day">1M</paper-tab> -->
+        <paper-tab q="span=year&interval=day&bounds=regular">1Y</paper-tab>
+        <paper-tab q="span=5year&interval=week&bounds=regular">5Y</paper-tab>
+        <!-- <paper-tab q="span=all&bounds=regular">ALL</paper-tab>-->
+      </paper-tabs>
+      <paper-button style="font-size:14px;" on-tap='_openDialog' title="Interactive Chart" data-id="interactiveChartDialog">Interactive Chart</paper-fab>
+    </div>
+    <!-- Border -->
+    <div class="border2"></div>
+
+    <!-- Fundimentals -->
+    <div class="layout horizontal">
+
+      <div class="flex fundimental_box" >
+        <h3>Stats</h3>
+        <div class="layout horizontal"><div secondary small class="flex">OPEN</div><div>{{_round(fundamentals.open)}}</div></div>
+        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+        <div class="layout horizontal"><div secondary small class="flex">HIGH</div><div >{{_round(fundamentals.high)}}</div></div>
+        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+        <div class="layout horizontal"><div secondary small class="flex">LOW</div><div>{{_round(fundamentals.low)}}</div></div>
+        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+        <div class="layout horizontal"><div secondary small class="flex">VOLUME</div><div>{{_nFormatter(fundamentals.volume)}}</div></div>
+        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+        <div class="layout horizontal"><div secondary small class="flex">AVG VOLUME</div><div>{{_nFormatter(fundamentals.average_volume)}}</div></div>
+
+      </div>
+
+      <div class="flex" style="max-width:40px; min-width:10px;"></div>
+
+      <div class="flex fundimental_box">
+        <h3>&nbsp;</h3>
+          <div class="layout horizontal"><div secondary small class="flex">52 WK HIGH</div><div>{{_round(fundamentals.high_52_weeks)}}</div></div>
+          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+          <div class="layout horizontal"><div secondary small class="flex">DIV/YIELD</div><div>{{_round(fundamentals.divident_yield)}}</div></div>
+          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+          <div class="layout horizontal"><div secondary small class="flex">52 WK LOW</div><div>{{_round(fundamentals.low_52_weeks)}}</div></div>
+          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+          <div class="layout horizontal"><div secondary small class="flex">MKT CAP</div><div>{{_nFormatter(fundamentals.market_cap)}}</div></div>
+          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+          <div class="layout horizontal"><div secondary small class="flex">P/E RATIO</div><div>{{_round(fundamentals.pe_ratio)}}</div></div>
+      </div>
+
+      <div class="flex" style="max-width:40px; min-width:10px;"></div>
+
+      <div class="flex about_box">
+          <h3>About</h3>
+          <div class="layout horizontal"><div class="flex" style="max-height:165px;text-overflow: ellipsis;overflow: hidden;">{{fundamentals.description}}</div></div>
+      </div>
+
+     </div>
+
+      <!-- Border -->
+    <div class="border1"></div>
+
+     <div class="layout horizontal end-justified">
+      <paper-button isenabled$={{cansell}} id="sellButton" style="font-size:16px;background-color:#30CD9A;min-width:135px;margin:0 10px 0 0" on-tap='_openDialog' title="Sell" data-id="OrderDialog" data-isPositionAtTarget=true data-orderType='sell'>Sell</paper-button>
+      <paper-button isenabled$={{canbuy}} id="buyButton" style="font-size:16px;background-color:#30CD9A;min-width:135px;margin:0 0 0 10px" on-tap='_openDialog' title="Buy" data-id="OrderDialog" data-isPositionAtTarget=true data-orderType='buy'>Buy</paper-button>
+     </div>
+
+    </div>
+    
+    
+<!-- DIALOGS START -->
+
+    <!-- INTERACTIVE CHART -->
+    <paper-dialog id="interactiveChartDialog" class="layout vertical" style="width:100%;height:100%;padding:20px;margin:0 0px;">
+      <div class="flex"></div>
+      <div class="self-center" style="width:80%;max-width:900px;padding:0">
+        <div class="horizontal layout end-justified">
+          <!-- <paper-button  dialog-confirm style="background-color:white; border-radius:0;margin:0">X</paper-button> -->
+          <paper-icon-button dialog-confirm style="background-color:white; border-radius:0;margin-bottom:-40px;margin-right:-40px"  icon="close" ></paper-icon-button>
+        </div>
+      </div>
+      <object id="objecFrame" class="self-center" data="" type="text/html"  width="80%" height="460" style="margin:0;padding:40px;max-width:900px;background-color:white"></object>
+
+      <div style="height:30px"></div>
+      <div class="flex"></div> 
+    </paper-dialog>
+
+    <!-- STOCK NEWS -->
+    <paper-dialog id="stockNewsDialog" class="layout vertical" style="width:100%;height:100%;padding:20px;margin:0 0px;">
+      <div class="flex"></div>
+      <div class="self-center" style="width:80%;max-width:900px;padding:0">
+        <div class="horizontal layout end-justified">
+          <paper-icon-button dialog-confirm style="background-color:white; border-radius:0;margin-bottom:-40px;margin-right:-40px"  icon="close" ></paper-icon-button>
+        </div>
+      </div>
+
+      <my-stock-news class="self-center"  id="stockNews" symbol$="" style="margin:0;padding:40px;max-width:900px;background-color:white; width:80%;height:460px"></my-stock-news>
+
+      <div style="height:30px"></div>
+      <div class="flex"></div> 
+    </paper-dialog>
+
+    <!-- STOCK TWITS -->
+    <paper-dialog id="stockTwitsDialog" class="layout vertical" style="width:100%;height:100%;padding:20px;margin:0 0px;">
+      <div class="flex"></div>
+      <div class="self-center" style="width:80%;max-width:900px;padding:0">
+        <div class="horizontal layout end-justified">
+          <paper-icon-button dialog-confirm style="background-color:white; border-radius:0;margin-bottom:-40px;margin-right:-40px"  icon="close" ></paper-icon-button>
+        </div>
+      </div>
+
+      <!-- <stock-twits class="self-center"  id="stockTwits" symbol$="" style="margin:0;padding:40px;max-width:900px;background-color:white; width:80%;height:460px"></stock-twits> -->
+      <object id="objecFrameTwits" class="self-center" data="" type="text/html"  width="80%" height="460" style="margin:0;padding:40px;max-width:900px;background-color:white"></object>
+      
+      <div style="height:30px"></div>
+      <div class="flex"></div> 
+    </paper-dialog>
+
+     <!-- ORDER DIALOG -->
+    <paper-dialog no-overlap id="OrderDialog" on-iron-overlay-closed="_resetOrderView" style="background-color:white;margin:0 0 10px 0;box-shadow:none" horizontal-align="right" vertical-align="bottom">
+      <div class="horizontal layout end-justified" style="padding:0;margin:0">
+        <paper-icon-button dialog-confirm  icon="close" style="background-color:white;"></paper-icon-button>
+      </div>
+      <my-stock-order id="orderView" selecteditem={{selecteditem}} instrument={{instrument.url}} token=[[token]] symbol=[[symbol]] side={{orderType}} style="margin-top:0" account=[[accounturl]]></my-stock-order>
+    </paper-dialog>
+      
+
+<!-- DIALOGS END -->
+
+  </template>
+
+  <script>
+    class MyInstrumentDetail extends Polymer.Element {
+      static get is() { return 'my-instrument-detail'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+
+          token: { 
+            type: String,
+            value: '', 
+          },
+
+          username: { 
+            type: String,
+            value: '', 
+          },
+
+          instrumenturl: {
+            type: String,
+            value: '',
+            
+          },
+
+          accounturl:{
+            type:String
+          },
+
+          symbol: {
+            type: String,
+            value: '',
+            observer: '_symbolLoaded',
+          },
+
+          quoteurl: {
+            type: String,
+            value: '', 
+          },
+
+          quote: {
+            type: Object,
+            value: null,
+          },
+
+          instrument: {
+            type: Object,
+            value: null,
+          },
+
+          fundamentals: {
+            type: Object,
+            value: null,
+          },
+
+          histquoteurl:{
+            type: String,
+            value: '', 
+          },
+
+          historicals: {
+            type: Object,
+            value: null,
+            observer: '_histLoaded',
+          },
+
+          chart: {
+            type: Object,
+            value: null,
+          }, 
+
+          windowWidth: {
+            type: Number,
+            value: 0,
+          },
+
+          chartOptSelected: {
+            type: String,
+            value: "span=day&interval=5minute&bounds=trading",
+            observer: '_chartSelectionChange',
+          },
+          orderType: {
+            type: String
+          },
+
+          selecteditem: {
+            type: Object,
+            value: null
+          },
+
+          cansell: {
+            type: String,
+            value: 'false'
+          },
+
+          canbuy: {
+            type: String,
+            value: 'false'
+          },
+
+          buyingPower: {
+            type: Number
+          }
+
+        };
+      }
+      _resetOrderView(){
+        this.shadowRoot.querySelector('#orderView')._reset()
+      }
+      ready() {
+        super.ready();
+
+        window.addEventListener("resize",  e =>  this._onResize(e));
+        this._updateData();
+      };
+
+      _menuClick(e) {
+
+        var targetElement = e.target.getAttribute("data-elementID");
+        var selector = '#' + targetElement;
+        this.shadowRoot.querySelector(selector).setAttribute('symbol', this.symbol);
+        
+        this._openDialog(e);
+      }
+
+      _openDialog(e){
+
+        var dialogID = e.target.getAttribute('data-id');
+        var isPositionAtTarget = e.target.getAttribute('data-isPositionAtTarget');
+        var OrderType = e.target.getAttribute('data-orderType');
+        var selector = '#' + dialogID;
+
+        if (isPositionAtTarget){
+
+          this.shadowRoot.querySelector(selector).positionTarget = e.target.parentElement;
+        }
+
+        if (OrderType){ this.orderType = OrderType; }
+
+        this.shadowRoot.querySelector(selector).fitInto = this;
+        this.shadowRoot.querySelector(selector).open();
+      
+        
+      }
+      _symbolLoaded(val) {
+        if (val == '') return
+
+        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
+        this.$.googleanalytics.gaTrackPageView('StockDetail/' + this.symbol);
+        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Stock-Click', 'Stock', this.symbol)
+
+        this.$.objecFrame.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/my-Interactive-chart.html?alt=media&symbol=" + this.symbol
+        this.$.objecFrameTwits.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/stock-twits.html?alt=media&token=fdd87234-181f-402c-a6d3-07b505f794db&symbol=" + this.symbol
+
+        // a chart is loaded but im loading a new symbol 
+        if(this.chart != null){
+          this.chart.destroy();
+          this.chart = null;
+        }
+
+        this._sellavailability();
+        this._buyavailability()
+  
+        this.quoteurl =  'https://api.robinhood.com/quotes/'  + this.symbol + '/'
+        this.histquoteurl =  'https://api.robinhood.com/quotes/historicals/' + this.symbol + '/?'+ this.chartOptSelected
+      }
+      
+      _chartSelectionChange(val){
+
+        if(this.chart == null) return;
+
+        this.chart.destroy();
+        this.chart = null;
+
+        this.histquoteurl =  'https://api.robinhood.com/quotes/historicals/' + this.symbol + '/?'+ val
+        
+      };
+
+
+      _onResize(e) {
+        if(this.chart == null) return;
+   
+        var widthChange = Math.abs(this.windowWidth - parseInt(window.innerWidth))
+        var newWidth = Math.abs(parseInt(this.$.myChart.width) - widthChange)
+
+        this.$.myChart.setAttribute('style', 'display:block;width:' + newWidth + 'px');
+
+        // redraws chart
+        this.chart.resize();
+
+        //set new size prop
+        this.windowWidth = window.outerWidth;
+      }
+
+      getHeaders() {
+      
+        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        };
+
+      _calcChange(currentPrice, priceFrom) {
+          
+          var change = (currentPrice - priceFrom);
+          var percentChange = ((change / priceFrom) * 100)  ;
+
+          return this._round(change) + ' ('  + ((percentChange > 0) ? '+' + this._round(percentChange): this._round(percentChange)) + '%)'
+      };
+
+      _sellavailability(){
+
+        if (this.selecteditem != null) {
+          var qty = parseInt(this.selecteditem.getAttribute('qty'))
+          this.cansell = (qty > 0)? 'true': 'false'
+        }
+        else { this.cansell = 'false'; }
+      }
+
+      _buyavailability(){
+        this.canbuy =  (this.buyingPower > 0)? 'true': 'false'
+      }
+
+      _round(num) {
+       
+        if(num == null) return 'N/A';
+
+        return (Math.round(num * 100) / 100 ).toFixed(2)
+      };
+
+      _priceMovement(currentPrice, priceFrom){
+        
+        var change = (currentPrice - priceFrom);
+
+        return (change >= 0) ? 'up': 'down';
+      };
+
+      _nFormatter(num){
+        
+        var SI_PREFIXES = ["", "k", "M", "B", "T", "P", "E"];
+        // what tier? (determines SI prefix)
+        var tier = Math.log10(num) / 3 | 0;
+    
+        // if zero, we don't need a prefix
+        if(tier == 0) return 'N/A';
+    
+        // get prefix and determine scale
+        var prefix = SI_PREFIXES[tier];
+        var scale = Math.pow(10, tier * 3);
+    
+        // scale the number
+        var scaled = num / scale;
+    
+        // format number and add prefix as suffix
+        return scaled.toFixed(2) + prefix;
+
+      };
+
+      _updateData() {
+        var vportfolio = this.$.quoteajax;
+        var vhistoricals = this.$.historicalsjax
+
+        setInterval(function() {  
+          vportfolio.generateRequest();
+          vhistoricals.generateRequest(); 
+          }, 6000);
+      };
+
+      _doChartUpdate(newObj){
+
+        var labelsArray = this.chart.data.labels;
+        var lastOldPoint = new Date(labelsArray[labelsArray.length - 1]);
+
+        for (var i = 0; i < newObj.historicals.length; i++) {
+            var newPoint = new Date(newObj.historicals[i].begins_at);
+
+            if (newPoint > lastOldPoint ) {
+
+              this.chart.data.labels.push(newPoint)
+              this.chart.data.datasets[0].data.push((newObj.span.includes('year')) ? newObj.historicals[i].close_price: newObj.historicals[i].open_price);
+              
+              this.chart.update();
+            }
+
+        }
+      }
+
+      _histLoaded(obj) {
+      
+        if(obj == null) return; 
+
+        if(this.chart != null) {
+          this._doChartUpdate(obj)
+          
+        }
+        else{
+
+          var dts = obj.historicals
+          var firstPlotPoint = new Date(dts[0].begins_at);
+
+          var times = [];
+          var prices = [];
+
+          //set the X and Y Axis   
+          for (var i = 0; i < dts.length; i++) {
+              times.push(new Date(dts[i].begins_at));
+              prices.push(((obj.span.includes('year')) ? dts[i].close_price: dts[i].open_price));
+          }
+
+          //remove the prev chart instance
+          if (this.chart != null) {this.chart.destroy()}
+          
+          //determine border color
+          var priceMove = this._priceMovement(this.quote.last_trade_price, this.quote.previous_close);
+          var borderColor = (priceMove == 'down') ? '#F45531':'#30CD9A'
+        
+          var ctx = this.$.myChart
+
+          this.chart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: times,
+                  datasets: [
+                      {
+                          data: prices,
+                          fill: true,
+                          lineTension: 0.2,
+                          pointRadius: 0,
+                          borderWidth: 2.5,
+                          borderColor: borderColor,
+                          pointStyle: 'circle',
+                          pointBorderColor: borderColor,
+                          pointBackgroundColor: borderColor,
+                          backgroundColor: '#040D14',
+                      },
+                  ],
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  hover: { mode: 'index',intersect: false},
+                  legend: {display: false},
+                  scales: {
+                      yAxes: [{
+                          ticks: {autoSkip: true, beginAtZero: false, fontColor: '#a9aebd', fontSize: '13', display: false,},
+                          gridLines: { drawBorder: false, color: '#30333B', display: false,},
+                      }],
+                      xAxes: [{
+                    
+                          ticks: { fontColor: '#a9aebd', fontSize: '13', display: false,},
+                          gridLines: {display: false,}, 
+                      }]
+                  },
+                  tooltips: {
+                      mode: 'label',
+                      intersect: false,
+                      displayColors: false,
+                      borderColor: borderColor,
+                      borderWidth: 1,
+                      titleFontSize: 14,
+                      bodyFontSize: 15,
+                      caretPadding: 20,
+                      footerSpacing: 20,
+                      callbacks: {
+                          title: function (tooltipItem, data) { 
+                            var date = new Date(tooltipItem[0].xLabel);
+                            var vdate = date.getMonth() + 1 + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(-2);
+                            var time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                            return vdate + ' ' + ((obj.span.includes('year')) ? '':time);
+                          }
+                      },
+                  },
+                
+              },
+
+          });
+          //end chart
+
+        }
+      }
+    }
+
+    window.customElements.define(MyInstrumentDetail.is, MyInstrumentDetail);
+
+  </script>
+
+</dom-module>

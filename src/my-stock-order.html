@@ -1,0 +1,366 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner-lite.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-stock-order">
+  <template>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 20px 0;
+        margin:10px;
+        width:222px;
+        height:265px;
+        --paper-button:{
+            font-size:16px;
+            color: white;
+            background-color:#30CD9A;
+        };
+
+        --paper-spinner-color: #30CD9A;
+        --paper-spinner-stroke-width: 3px;
+
+        --paper-input-container-underline:{
+          border-bottom: 2px solid #30CD9A;
+        }
+        --paper-input-container:{
+          width:80px;
+        }
+        --paper-input-container-input-webkit-spinner: {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        
+
+      }
+      g {color: #30CD9A}
+      r {color: #F45531}
+      h2 { margin-top:0 }
+    </style>
+    
+    <iron-ajax auto id="accountajax"
+        url="{{account}}"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{accountObject}}">
+    </iron-ajax>
+
+    <iron-ajax id="orderajax"
+        url="[[apiUrl]]"
+        headers= '{{headers}}'
+        handle-as="json"
+        method="POST"
+        on-response="_onOrderResponse"
+        on-error="_onOrderError">
+    </iron-ajax>
+
+
+  <iron-pages id='orderPages' attr-for-selected="name" selected="order" style="height:100%">
+    <!-- ORDER ENTRY -->
+    <div name="order">
+      <!-- Limit BUY -->
+      <template is="dom-if" if="{{isBuy}}">
+        <h2>Limit Buy</h2>
+        <div class="layout horizontal flex">
+          <div style="white-space: nowrap; padding-bottom:10px; font-size:16px;margin-right:20px;" class="self-end flex">Shares of [[symbol]]</div>
+          <paper-input id="txtBuyQty" required autofocus no-label-float allowed-pattern="(?:\d*)?\d+" pattern="(?:\d*)?\d+" style="text-align:right" value="{{buyQty::input}}"></paper-input>
+        </div>
+        <div class="layout horizontal flex">
+          <div style="white-space: nowrap; padding-bottom:10px; font-size:16px;margin-right:20px;" class="self-end flex">Limit Price</div>
+          <paper-input id="txtBuyPrice" required no-label-float  allowed-pattern="[0-9]*[.,]?[\d*.]" style="text-align:right" value="{{buyPrice::input}}" ><div slot="prefix">$</div></paper-input>
+        </div>
+
+        <!-- Border -->
+        <div style="width:100%; height:1px; background-color:rgb(175, 175, 175);margin: 20px 0;"></div>
+
+        <div class="layout horizontal flex" style="margin-bottom:40px; color:rgb(141, 141, 141)"><div class="flex">Estimated Cost</div><div>{{_estimateCost(buyQty, buyPrice)}}</div></div>
+      </template>
+
+      <!-- Limit SELL -->
+      <template is="dom-if" if="{{!isBuy}}">
+        <h2>Limit Sell</h2>
+        <div class="layout horizontal flex">
+          <div style="white-space: nowrap; padding-bottom:10px; font-size:16px;margin-right:20px;" class="self-end flex">Shares of [[symbol]]</div>
+          <paper-input id="txtSellQty" required autofocus no-label-float allowed-pattern="(?:\d*)?\d+" pattern="(?:\d*)?\d+" style="text-align:right" value="{{sellQty::input}}"></paper-input>
+        </div>
+        <div class="layout horizontal flex">
+          <div style="white-space: nowrap; padding-bottom:10px; font-size:16px;margin-right:20px;" class="self-end flex">Limit Price</div>
+          <paper-input id="txtSellPrice" required no-label-float allowed-pattern="[0-9]*[.,]?[\d*.]" style="text-align:right" value="{{sellPrice::input}}"><div slot="prefix">$</div></paper-input>
+        </div>
+
+        <!-- Border -->
+        <div style="width:100%; height:1px; background-color:rgb(175, 175, 175);margin: 20px 0;"></div>
+
+        <div class="layout horizontal flex" style="margin-bottom:40px; color:rgb(141, 141, 141)"><div class="flex">Estimated Credit</div><div id="credit">{{credit}}</div></div>
+
+      </template>
+
+      <!-- PLACE ORDER BUTTON -->
+      <div class="layout horizontal end-justified ">
+          <paper-button style="margin:0;width:100%" on-tap='_placeOrder' title="Place Order">Place Order</paper-button>
+      </div>
+    </div>
+
+    <!-- loader -->
+    <div name="loader" class="horizontal layout" style="height:100%">
+      <div class="layout horizontal self-center flex">
+        <div class="flex"></div><paper-spinner-lite active id="spinner"></paper-spinner-lite><div class="flex"></div>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div name="message" class="layout vertical flex" style="height:100%">
+      <iron-icon id="msgIcon" icon="" class="self-center" style="color:#F45531; width:55px; height: 55px;"></iron-icon>
+      <h3 id='msgText'></h3>
+      <div class="flex"></div>
+      <div id="confirmButtons" style="display:none" class="layout horizontal ">
+        <paper-button on-tap='_cancelPlaceOrder' title="Place Order" style="margin-right:10px;">Cancel</paper-button>
+        <paper-button on-tap='_confirmPlaceOrder' style="width:110px;" title="Place Order">Submit</paper-button>
+      </div>
+    </div>
+  </iron-pages>
+    
+  </template>
+
+  <script>
+    class MyStockOrder extends Polymer.Element {
+      static get is() { return 'my-stock-order'; }
+      static get properties() {
+        return {
+          account:{ type: String },
+          instrument: { type: String },
+          symbol: { type: String, observer: '_symbolChange' },
+          type: { type: String, value: 'limit'},
+          time_in_force: { type: String, value: 'gtc' },
+          trigger: { type: String, value: 'immediate' },
+          price: { type: Number },
+          quantity: { type: String },
+          side: { type: String, observer: '_isBuy'},
+          
+          apiUrl: {
+            type: String,
+            value: 'https://api.robinhood.com/orders/'
+          },
+
+          isBuy: {
+            type:Boolean
+          },
+
+          token: { 
+            type: String,
+          },
+
+          buyQty: { 
+            type: Number,
+            value: "",
+            observer: '_setquantity'
+          },
+
+          buyPrice: { 
+            type: Number,
+            value: "",
+            observer: '_setprice'
+          },
+
+          sellQty: { 
+            type: Number,
+            value: "",
+            observer: '_getSharesQty'
+          },
+
+          sellPrice: { 
+            type: Number,
+            value: "",
+            observer: '_getSharesQty'
+          },
+
+          shares: {
+            type: Number,
+          },
+
+          accountObject: {
+            type:Object,
+          },
+
+          credit: {
+            type: Number
+          },
+
+          selecteditem:{
+            type: Object,
+            observer: '_getSharesQty'
+          },
+
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+        };
+      }
+
+      ready() {
+        super.ready();
+      };
+
+      _reset(){
+        this.$.orderPages.select('order');
+        this.sellPrice = "";
+        this.sellQty = "";
+        this.buyPrice = "";
+        this.buyQty = "";
+      }
+      _symbolChange(){
+
+        this._reset();
+      }
+
+      _isBuy() { this.isBuy = (this.side == 'buy')? true: false;  this.$.orderPages.select('order');}
+
+      _placeOrder(confirmed){
+
+        if(this.side == 'buy'){
+          if(this.shadowRoot.querySelector('#txtBuyPrice').validate() && this.shadowRoot.querySelector('#txtBuyQty').validate()){
+            if (confirmed != true){ 
+              this._displayMessage('help-outline', "#30CD9A", 'You are placing a Limit Order to buy <g>' + this.buyQty + '</g> shares of <g>' + this.symbol + '</g> at <g>$'+ this.buyPrice + '</g> per share for a total cost of <g>$' + this._estimateCost(this.buyQty,this.buyPrice) + '</g>.' , true);
+              }
+            else {
+              
+              this.$.orderajax.body = this._getParams()
+              this.$.orderajax.generateRequest();
+            }
+          }
+        }
+        else if(this.side == 'sell') {
+          if(this.shadowRoot.querySelector('#txtSellPrice').validate() && this.shadowRoot.querySelector('#txtSellQty').validate()){
+            if (confirmed != true){ 
+              this._displayMessage('help-outline', "#30CD9A", 'You are placing a Limit Order to sell <g>' + this.sellQty + '</g> shares of <g>' + this.symbol + '</g> at <g>$'+ this.sellPrice + '</g> per share for a total credit of <g>$' + this._estimateCredit(this.sellQty, this.sellPrice) + '</g>.' , true);
+            }
+            else {
+              
+              console.log(JSON.stringify(this._getParams()))
+              this.$.orderajax.body = this._getParams()
+              this.$.orderajax.generateRequest();
+            }
+          }
+        }
+      }
+
+      _cancelPlaceOrder() { this.$.orderPages.select('order'); }
+      _confirmPlaceOrder() { this.$.orderPages.select('loader'); this._placeOrder(true); }
+
+      _onOrderResponse(e) {  
+        var o = e.detail.response;
+        //console.log(o);
+        var msg = "<h4 style=\"text-transform: capitalize;\">" + this.symbol + " " + o.type + " " +  o.side + " Order Queued</h4>"
+        var qty = "<div class=\"layout vertical end\" style=\"width:80px;\">" + "<div>" + parseFloat(o.quantity).toFixed(0) + "</div>" + "<div><r>Quantity</r></div>" + "</div>"
+        var price = "<div class=\"layout vertical start\" style=\"width:80px;\">" + "<div>" + parseFloat(o.price).toFixed(2) + "</div>" + "<div><r>Price /s</r></div>" + "</div>"
+        var flex = "<div class=\"flex\"></div>"
+        var hborder = "<div style=\"width:100%; height:1px; background-color:rgb(175, 175, 175);margin: 20px 0;\"></div>"
+        var vborder = "<div style=\"width:1px; background-color:#363F43;margin:0 15px;\"></div>"
+        var total =  "<div style=\"text-align: center;color: #2fce9a;font-size: 28px; font-weight:400\">$" + (o.quantity * o.price).toFixed(2) + "</div>"
+
+        var body = msg + "<div class=\"layout horizontal\">" + flex + qty + vborder + price + flex +"</div>" + hborder + total
+        this._displayMessage('thumb-up', "#30CD9A", body, false)
+      }
+
+      _onOrderError(e){
+        this._displayMessage('error-outline',"#F45531", e.detail.request.xhr.response.detail, false)
+      }
+
+      _displayMessage(icon, iconcolor, message, isConfirm){
+
+        // assign text
+        this.$.msgText.innerHTML = message;
+        this.$.msgIcon.icon = icon;
+        this.$.msgIcon.style.color = iconcolor
+        this.$.confirmButtons.style.display = "none";
+
+        // display confirmation buttons
+        if(isConfirm) { this.$.confirmButtons.style.display = "block";}
+
+        // change iron-pages to message page
+        this.$.orderPages.select('message');
+       
+      }
+
+      _getParams(){
+        return {
+          account: this.account,
+          instrument: this.instrument,
+          symbol: this.symbol,
+          type: this.type,
+          time_in_force: this.time_in_force,
+          trigger: this.trigger,
+          price: this.price,
+          quantity: this.quantity,
+          side: this.side
+        };
+      }
+
+      _setquantity(val){ this.quantity = val }
+
+      _setprice(val){this.price = val;}
+
+      _calcBuyingPower(){
+   
+        var a = this.accountObject;
+        return (parseFloat(a.buying_power) + ((a.sma == '')? 0:parseFloat(a.sma))).toFixed(2)
+
+      }
+
+      _estimateCost(qty, price) {
+        if (qty == "" || price == "") { return (0).toFixed(2) } else { return (qty * price).toFixed(2)}
+      }
+
+      _estimateCredit() {
+        this._setquantity(this.sellQty)
+        this._setprice(this.sellPrice)
+
+         return  (this.sellQty * this.sellPrice).toFixed(2)
+      }
+
+      _getSharesQty(val){
+
+        if ((typeof val) == 'object') { 
+          if (val == null) { this.credit = (0).toFixed(2)} else {
+            this.credit = parseFloat(val.getAttribute('qty')).toFixed(0) + ' available';
+          }
+        }
+        else if ((typeof val) == 'string'){
+            if (val == "") {  this.credit = parseFloat(this.selecteditem.getAttribute('qty')).toFixed(0) + ' available';} else{
+                this.credit = '$' + this._estimateCredit()
+            }
+        }
+      }
+
+      _onError(e){
+        console.log(e.detail.error)
+      }
+
+      _onResponse(e){
+        const req = e.detail; 
+        
+        if (req.status != 200){ 
+          console.log(req.status); return 
+        }
+      }
+      getHeaders(val) {
+        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+      };
+    }
+
+    window.customElements.define(MyStockOrder.is, MyStockOrder);
+  </script>
+</dom-module>

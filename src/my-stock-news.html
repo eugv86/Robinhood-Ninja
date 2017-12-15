@@ -1,0 +1,154 @@
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+
+
+<dom-module id="my-stock-news">
+  <template>
+    
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style>
+      :host {
+        display: block;
+        
+      }
+
+      @keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-moz-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-webkit-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-o-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+
+      .scrollContainer {
+        overflow:auto; 
+        height:calc(100% - 38px);
+
+        animation: fadein 1.5s;
+        -moz-animation: fadein 1.5s; /* Firefox */
+        -webkit-animation: fadein 1.5s; /* Safari and Chrome */
+        -o-animation: fadein 1.5s; /* Opera */
+      }
+
+      .scrollContainer:hover::-webkit-scrollbar-thumb{
+        background-color: #30CD9A;
+      }
+
+      .list-item{
+        margin: 5px 10px;
+        padding-bottom: 5px;
+      }
+
+      ::-webkit-scrollbar {
+        width: 13px;
+      }
+      
+      ::-webkit-scrollbar-button {
+        background: white; 
+      }
+
+  
+      ::-webkit-scrollbar-track-piece{
+        background: white; 
+        /* border-right: 5px solid #1A1E24; */
+
+      }
+      ::-webkit-scrollbar-thumb {
+        background: white;
+        border-left:8px solid white;
+      
+      }
+    </style>
+    
+    <iron-ajax auto id="newsajax"
+      url="{{newsurl}}"
+      headers= '{{headers}}'
+      handle-as="json"
+      last-response="{{newsObject}}">
+    </iron-ajax>
+
+    <h2 style="margin-top:0">RECENT NEWS: {{symbol}}</h2>
+    <div class="scrollContainer">
+      <template is="dom-repeat" id="list" items="{{newsObject.results}}" as="n">
+        
+        <div class="layout horizontal list-item">
+          <a href="{{n.url}}" target="_blank" tabindex="-1" style="text-decoration:none; color:inherit;">
+            <paper-button style="text-transform:none;margin:0;padding:10px;font-size:inherit" >
+              <div class="layout vertcal self-start" style="padding-right:15px">
+                <div style="font-size:28px;line-height: 1;">{{_getDateDay(n.published_at)}}</div>
+                <div style="font-size:16px">{{_getDateMonth(n.published_at)}}</div>
+                <div style="font-size:13px">{{_getDateYear(n.published_at)}}</div>
+              </div>
+              <div class="layout vertcal self-start">
+                  <div style="font-size:16px;line-height: 1.4;"><b>{{n.title}}</b></div>
+                  <div>{{n.summary}}</div>
+                  <div style="color:#30CD9A;font-size:16px">{{n.source}}</div>
+              </div>
+            </paper-button>
+          </a>
+        </div>
+     
+      </template>
+    </div>
+  </template>
+
+  <script>
+    class MyStockNews extends Polymer.Element {
+      static get is() { return 'my-stock-news'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()',
+          },
+
+          symbol: {
+            type: String,
+            value: '',
+            observer: '_getNewsUrl',
+          },
+
+          newsurl: {
+            type: String,
+            value: ''
+          },
+
+          newsObject:{
+            type: Object,
+            value: null,
+          },
+
+          months: {
+            type: Array,
+            value : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+          }
+        };
+      }
+
+      ready() {
+        super.ready();
+      }
+
+      _getNewsUrl(val) {
+        if (val == '') return
+
+        var url = "https://api.robinhood.com/midlands/news/" + val + "/"
+        this.newsurl =  url;
+      }
+
+      _getDateDay(val){ return (new Date(val)).getDate(); }
+      _getDateMonth(val){ return this.months[(new Date(val)).getMonth()] }
+      _getDateYear(val){ return (new Date(val)).getFullYear(); }
+      
+      getHeaders() {
+        return{"Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+      };
+
+    }
+
+    window.customElements.define(MyStockNews.is, MyStockNews);
+  </script>
+</dom-module>

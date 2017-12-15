@@ -1,0 +1,250 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="shared-styles.html">
+
+<script src="../bower_components/moment/moment.js"></script>
+
+<dom-module id="my-ticker-2-item">
+  <template>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+
+      .box {
+        padding: 5px 10px;
+      }
+
+      .symbol{
+        font-size: 14px;
+        color: #9e9e9e;
+      }
+
+      .price {
+        font-size: 14px;
+      }
+
+      .price::before {
+        content: "$"
+      }
+
+      .change{
+        font-size: 13px;
+        line-height: 2;
+      }
+
+      .change_percent{
+        font-size: 20px;
+        padding-right: 10px;
+      }
+
+      .change_percent::after{
+        content:"%"
+      }
+
+      div[change=up] {
+       color:#30CD9A;
+       /* background-color: #30CD9A; */
+      }
+
+      div[change=down] {
+       color:#F45531;
+       /* background-color: #F45531; */
+      }
+
+    </style>
+    
+
+    <iron-ajax auto id="alphavantageajax"
+        url="[[apiUrl]]"
+        handle-as="json"
+        on-response="_onResponse"
+        on-error="_onError"
+        debounce-duration="300">
+    </iron-ajax>
+
+    <div class="layout vertical self-center flex box">
+      <div class="layout horizontal"><div class="symbol">[[_tosimplename(symbol)]]</div><div class="flex"></div><div class="price">[[_round(tickerdata.TimeSeriesDaily.today.4close)]]</div></div>
+      <div class="layout horizontal">
+        <div change$="[[_priceMovement(tickerdata.TimeSeriesDaily.today.4close, tickerdata.TimeSeriesDaily.yesterday.4close)]]" class="change_percent">{{_calcPercentChange(tickerdata.TimeSeriesDaily.today.4close, tickerdata.TimeSeriesDaily.yesterday.4close)}}</div>
+        <div change$="[[_priceMovement(tickerdata.TimeSeriesDaily.today.4close, tickerdata.TimeSeriesDaily.yesterday.4close)]]" class="change self-end">([[_calcPriceChange(tickerdata.TimeSeriesDaily.today.4close, tickerdata.TimeSeriesDaily.yesterday.4close)]])</div></div>
+    </div>
+
+  </template>
+
+  <script>
+    class MyTicker2Item extends Polymer.Element {
+      static get is() { return 'my-ticker-2-item'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+          tickerdata: {
+            type: Object,
+            value: null,
+          },
+          symbol: {
+            type: String,
+            value: '',
+            observer: '_symbolLoaded',
+          },
+          apiUrl: {
+            type: String,
+            value: '',
+          }
+        };
+      }
+
+      ready() {
+        super.ready();
+        this._updateData();
+      };
+
+
+      _symbolLoaded(val){
+        // I hate this API but have not found a better free alternative
+          this.apiUrl = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + val + "&interval=1min&apikey=3TX6FLXA767VBUJN"
+      }
+
+      convertDate(inputFormat) {
+        function pad(s) { return (s < 10) ? '0' + s : s; }
+        var d = new Date(inputFormat);
+        return [d.getFullYear(), pad(d.getMonth()+1),pad(d.getDate())].join('-');
+      }
+
+      _onError(e){
+        console.log(e.detail.error)
+      }
+
+      _onResponse(e){
+        const req = e.detail; 
+        
+        if (req.status != 200){ 
+          console.log(req.status); return 
+        }
+        else if (Object.keys(req.response).length <= 1){
+          console.log("Trying request again:" + this.symbol )
+          var alphavantageajax = this.$.alphavantageajax;
+          setTimeout(function(){ alphavantageajax.generateRequest(); }, 3000);
+        }
+        else{
+         // alert(req.response)
+          var today = this.convertDate(new Date());
+          var yesterday = this.convertDate(this._getPreviousWorkday())
+
+          var t = new RegExp('(' + today + '(?=\":))', 'g');
+          var y = new RegExp('(' + yesterday + '(?=\":))', 'g');
+
+          var o = JSON.parse(JSON.stringify(req.response).replace(/\s(?=.+":)/g, "").replace(/[()]/g, "").replace(/\.(?=\w+":)/g, "").replace(t, "today").replace(y, "yesterday"));
+          this.tickerdata = o
+        }
+      }
+
+       _getPreviousWorkday(){
+        let workday = moment();
+        let day = workday.day();
+        let diff = 1;  // returns yesterday
+        if (day == 0 || day == 1){  // is Sunday or Monday
+          diff = day + 2;  // returns Friday
+        }
+        return workday.subtract(diff, 'days');
+      }
+
+      _yesterdayDate(){
+
+        var today = moment();
+        var tomorrow = moment(today).subtract(1, 'days').startOf('day');
+
+        return tomorrow.toString();
+      }
+
+      _updateData() {
+        var alphavantageajax = this.$.alphavantageajax;
+        
+        setInterval(function() {  
+          if(!document.hidden){ 
+            alphavantageajax.generateRequest();
+          }
+        }, 20000);
+      };
+
+      _calcPriceChange(currentPrice, priceFrom) {
+          if (!currentPrice || !priceFrom) return '0.00'
+          var change = (currentPrice - priceFrom);
+
+          return this._round(change)
+      };
+
+      _calcPercentChange(currentPrice, priceFrom) {
+        if (!currentPrice || !priceFrom) return '0.00'
+          var change = (currentPrice - priceFrom);
+          var percentChange = ((change / priceFrom) * 100)  ;
+
+          return this._round(percentChange)
+      };
+
+      _priceMovement(currentPrice, priceFrom){
+        
+        var change = (currentPrice - priceFrom);
+
+        return (change >= 0) ? 'up': 'down';
+      };
+
+      _round(num) {
+        
+         if(num == null) return '0.00';
+ 
+         return (Math.round(num * 100) / 100 ).toFixed(2)
+       };
+ 
+
+      _tosimplename(val){
+        switch (val) {
+          case '^GSPC':
+              return 'S&P 500'
+            break;
+
+          case '^IXIC':
+            return 'NASDAQ'
+          break;
+
+          case 'EURUSD=X':
+            return 'EUR/USD'
+          break;
+
+          case 'CL=F':
+            return 'Crude Oil'
+          break;
+
+          case 'XAUUSD=X':
+            return 'GOLD'
+          break;
+
+          case '^DJI':
+            return 'DOW'
+          break;
+
+          case '^VIX':
+            return 'VIX'
+          break;
+
+          default:
+          return val;
+            break;
+        }
+      }
+
+      getHeaders() { 
+         return{"Access-Control-Allow-Origin": "*"}
+        };
+    }
+
+    window.customElements.define(MyTicker2Item.is, MyTicker2Item);
+  </script>
+</dom-module>

@@ -1,0 +1,219 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-help">
+  <template>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        background-color: white;
+        color: black;
+        padding: 20px 40px;
+        width:750px;
+        height:450px;
+        --paper-button:{font-size:16px;color: white; background-color:#30CD9A;};
+        --paper-spinner-color: #30CD9A;
+        --paper-spinner-stroke-width: 3px;
+        --paper-input-container-underline:{border-bottom: 2px solid #30CD9A;}
+        --paper-input-container-input-webkit-spinner: {-webkit-appearance: none; margin: 0;}       
+      }
+
+      paper-tabs {
+        --paper-tab-ink: #30CD9A;
+        --paper-tabs-selection-bar-color: #30CD9A;
+      }
+ 
+      g {color: #30CD9A}
+      r {color: #F45531}
+      h2 { margin-top:0 }
+
+    </style>
+
+    <iron-ajax id="freshdeskajax"
+        url="https://formspree.io/**YOUR FESHDESK EMAIL**"
+        headers= '{{headers}}'
+        handle-as="json"
+        method="POST"
+        on-response="_onTicketResponse"
+        on-error="_onError">
+    </iron-ajax>
+
+
+  <iron-pages id='helpPages' attr-for-selected="name" selected="order" style="height:100%">
+    <!-- FORM ENTRY -->
+    <div name="order" class="vertical layout flex">
+      <h1 class="self-center">Uh-oh I must be in trouble...Talk to me! </h1>
+      <paper-tabs selected="{{type}}" attr-for-selected="val" >
+        <paper-tab val="Question"><iron-icon icon="help-outline" style="padding-right:10px;"></iron-icon>Question</paper-tab>
+        <paper-tab val="Problem"><iron-icon icon="bug-report" style="padding-right:10px;"></iron-icon>Problem</paper-tab>
+        <paper-tab val="Feature"><iron-icon icon="lightbulb-outline" style="padding-right:10px;"></iron-icon>Feature Request</paper-tab>
+      </paper-tabs>
+      <div class="layout horizontal">
+        <paper-input id="txtemail" type="email" required label="Email" class="flex" value="{{email::input}}"></paper-input>
+      </div>
+      <div class="layout horizontal">
+          <paper-input id="txtname" label="Full Name" required class="flex" value="{{fullname::input}}"></paper-input>
+      </div>
+      <div class="layout horizontal">
+          <paper-textarea id="txtdescription" required rows=4 textarea  label="Tell me everything..." class="flex" value="{{description::input}}"></paper-textarea>
+      </div>
+      <div class="layout horizontal end-justified" style="margin-top:20px;">
+        <paper-button on-tap='_closePopup' style="margin-right:20px;" title="Submit Ticket">Cancel</paper-button>
+        <paper-button on-tap='_submitTicket' style="width:120px;" title="Submit Ticket">Submit</paper-button>
+      </div>
+    </div>
+
+    <!-- loader -->
+    <div name="loader" class="horizontal layout" style="height:100%">
+      <div class="layout horizontal self-center flex">
+        <div class="flex"></div><paper-spinner-lite active id="spinner"></paper-spinner-lite><div class="flex"></div>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div name="message" class="layout vertical flex" style="height:100%">
+      <div class="flex"></div>
+      <iron-icon id="msgIcon" icon="" class="self-center" style="color:#F45531; width:55px; height: 55px;"></iron-icon>
+      <h1 id='msgText' class="self-center"></h1>
+      <div class="flex"></div>
+      <div class="layout horizontal ">
+        <paper-button on-tap='_closePopup' title="Close" style="margin-right:10px;">Close</paper-button>
+      </div>
+    </div>
+  </iron-pages>
+    
+  </template>
+
+  <script>
+    class MyHelp extends Polymer.Element {
+      static get is() { return 'my-help'; }
+      static get properties() {
+        return {
+          description:{ type: String },
+          status: { type: Number, value: 2 },
+          subject: { type: String, computed: '_getsubject()' },
+          priority: { type: Number, value: 1 },
+          email: { type: String },
+          fullname: { type: String },
+          type: { type: String, value: 'Problem' },
+
+
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+        };
+      }
+
+      ready() {
+        super.ready();
+      };
+
+      _submitTicket(){
+
+      var isval = this._validateInputs();
+
+      if (isval == true){
+          var bodyObj = {
+            description: this.description,
+            status: this.status,
+            subject: this.subject,
+            priority: this.priority,
+            email: this.email,
+            name: this.fullname,
+            type: this.type
+          }
+
+          this.$.helpPages.select('loader');
+          this.$.freshdeskajax.body = bodyObj
+          this.$.freshdeskajax.generateRequest();
+
+        }
+        else {return}
+
+        
+      }
+
+      _onTicketResponse(e) {
+        this._displayMessage('thumb-up', "#30CD9A", "Thanks for reaching out! Please look for an email from us.", false)
+      }
+
+      _validateInputs() {
+        var inputs = this.shadowRoot.querySelectorAll('paper-input[required], paper-textarea[required]');
+        var isValid = true
+        for(var i = 0; i < inputs.length; i++){ 
+          if(!inputs[i].validate()) {
+            isValid = false; 
+          }
+        }
+
+        return isValid;
+      }
+
+
+     
+      _displayMessage(icon, iconcolor, message){
+
+        // assign text
+        this.$.msgText.innerHTML = message;
+        this.$.msgIcon.icon = icon;
+        this.$.msgIcon.style.color = iconcolor
+
+        this.$.helpPages.select('message');
+      
+      }
+
+      _getsubject(){
+          switch (this.type) {
+            case 'Question':
+            return 'Question Ticket'
+            break;
+            
+            case 'Problem':
+            return 'Problem Ticket'
+            break;
+            
+            case 'Feature':
+             return 'Feature Ticket'
+            break;
+          
+            default:
+              break;
+          }
+      }
+
+      _closePopup() {
+
+       this.parentElement.toggle()
+      
+      }
+
+      _onError(e){
+        console.log( e.detail.request.xhr.response.description)
+        this._displayMessage('error-outline',"#F45531", e.detail.request.xhr.response.detail, false)
+      }
+
+      getHeaders(val) {
+        return{"Content-Type": "application/json"}
+      };
+    }
+
+    window.customElements.define(MyHelp.is, MyHelp);
+  </script>
+</dom-module>

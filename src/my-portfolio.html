@@ -1,0 +1,594 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/async.html">
+
+<link rel="import" href="my-instrument.html">
+<link rel="lazy-import" href="my-instrument-detail.html">
+<link rel="import" href="shared-styles.html">
+
+<script src="../bower_components/moment/moment.js"></script>
+<script src="../bower_components/chart.js/dist/Chart.min.js"></script>
+
+<dom-module id="my-portfolio">
+  <template>
+
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 0;
+        overflow:hidden;
+      }
+      .value_card> div[title] {
+        font-size: 22px;
+        color: #9e9e9e 
+      }
+      .value_card> div[main] {
+        font-size: 35px;
+        color: #fff 
+      }
+      .stock_list_wrap {
+        min-width: 325px;
+        overflow: auto;
+        height: 100%;
+      }
+      .stock_list_wrap:hover::-webkit-scrollbar-thumb{
+        background-color: #30CD9A;
+      }
+      .stock_list_wrap:hover::-moz-scrollbar-thumb{
+        background-color: #30CD9A;
+      }
+    </style>
+
+    <iron-ajax auto id="accountajax"
+        url="https://api.robinhood.com/accounts/"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{account}}"
+        on-error="_handleError">
+    </iron-ajax>
+
+    <iron-ajax auto id="userajax"
+        url="{{account.results.0.user}}"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{user}}"
+        on-error="_handleError">
+    </iron-ajax>
+
+    <iron-ajax auto id="portfolioajax"
+        url="{{account.results.0.portfolio}}"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{portfolio}}"
+        on-error="_handleError">
+    </iron-ajax>
+
+    <iron-ajax auto id="positionsajax"
+        url="{{account.results.0.positions}}?nonzero=true"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{positions}}"
+        on-error="_handleError">
+    </iron-ajax>
+
+    <iron-ajax auto id="watchlistajax"
+        url="{{watchlistURL}}"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{watchlist}}">
+    </iron-ajax>
+
+    <iron-ajax auto  id="historicalsAccountjax"
+        url="[[histurl]]"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{historicalsaccount}}">
+    </iron-ajax>
+
+<div class="layout horizontal" style="height:100%">
+    <div class="flex layout vertical">
+
+      <template is="dom-if" if="{{symbol}}">
+        <div class="self-end" style="position:absolute;">
+          <paper-icon-button icon="close" on-click="_onClose"></paper-icon-button>
+        </div>
+      </template>
+
+      <iron-pages id="portfolioPages" class="flex layout vertical" selected="[[symbol]]" attr-for-selected="symbol" fallback-selection="">
+
+        <!-- Portfolio Overview Info Page  -->
+        <div class="flex layout vertical" symbol="" style="padding: 20px 50px;">
+
+          <div class="layout horizontal" >
+
+            <div class="horizontal end-justified layout flex">
+              <div class="value_card">
+                <div title>Portfolio Value</div>
+                  <!-- Regular Hours -->
+                  <template is="dom-if" if="{{!portfolio.extended_hours_equity}}">
+                    <div main>${{_round(portfolio.equity)}}</div>
+                    <div small change$="{{_priceMovement(portfolio.equity, portfolio.equity_previous_close)}}">{{_calcChange(portfolio.equity, portfolio.equity_previous_close)}} Today</div>
+                  </template>
+                  <!-- After Hours -->
+                  <template is="dom-if" if="{{portfolio.extended_hours_equity}}">
+                    <div main>${{_round(portfolio.extended_hours_equity)}}</div>
+                    <div small change$="{{_priceMovement(portfolio.equity, portfolio.equity_previous_close)}}">{{_calcChange(portfolio.equity, portfolio.equity_previous_close)}} Today</div>
+                    <div small change$="{{_priceMovement(portfolio.extended_hours_equity, portfolio.equity)}}">{{_calcChange(portfolio.extended_hours_equity, portfolio.equity)}} After Hours</div>
+                  </template>
+              </div>
+            </div>
+
+            <div style="width:1px; height:55px; background-color:#363F43;margin: 15px 40px 15px 40px;"></div>
+
+            <div class="horizontal start-justified layout flex">
+              <div class="value_card">
+                <div title>Buying Power</div>
+                <!-- <div main>${{_calcBuyingPower(account.results.0.margin_balances.margin_limit, account.results.0.margin_balances.cash)}}</div> -->
+                <!-- <div main>${{_roundWithPad(account.results.0.margin_balances.unallocated_margin_cash)}}</div> -->
+                <div main>${{buyingPower}}</div>
+               
+                <div small style="color:#9e9e9e">Cash ${{_calcCash(account.results.0.margin_balances.margin_limit, account.results.0.margin_balances.unallocated_margin_cash )}}</div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Border -->
+          <div style="width:100%; height:1px; background-color:#363F43;margin: 20px 0;"></div>
+
+          <!-- Chart for portfolio value -->
+          <div class="flex">
+            <canvas id="myAccountChart" width="300" height="300"></canvas>
+          </div>
+
+          <div>
+            <div class="layout center-justified horizontal ">
+              <paper-tabs id="chartAccountSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:390px" >
+                <paper-tab q="span=day&interval=5minute&bounds=trading">1D</paper-tab>
+                <paper-tab q="span=week&interval=10minute&bounds=regular">1W</paper-tab>
+                <!-- <paper-tab q="day">1M</paper-tab> -->
+                <paper-tab q="span=year&interval=day&bounds=regular">1Y</paper-tab>
+                <paper-tab q="span=5year&interval=week&bounds=regular">5Y</paper-tab>
+                <!-- <paper-tab q="span=all&bounds=regular">ALL</paper-tab> -->
+              </paper-tabs>
+            </div>
+          </div>
+
+          <div style="height:10px;margin: 0 0px"></div>
+
+        </div>
+
+        <!-- Stock Selected Detail Page -->
+        <my-instrument-detail id='instDetail' class="flex layout vertical" buyingpower={{buyingPower}} selecteditem={{selecteditem}} username={{user.username}} token={{token}} symbol="{{symbol}}" accounturl={{account.results.0.url}}></my-instrument-detail>
+
+      </iron-pages>
+
+    </div>
+
+    <!-- Border -->
+    <div style="width:10px; background-color:#1A1E24;margin: 0 0px"></div>
+
+
+    <!-- My Stock List -->
+    <div class="stock_list_wrap" > 
+      <iron-selector selected="{{symbol}}" attr-for-selected="symbol" selected-item="{{selecteditem}}" >
+        <!-- POSITIONS -->
+        <div style="padding:15px 15px 5px; color: #30CD9A">Positions</div>
+        <template is="dom-repeat" id="list" items="{{positions.results}}" as="position" scroll-target="document" initial-count="8">
+            <my-instrument instrumenturl={{position.instrument}}  token={{token}} qty$={{position.quantity}} quantity={{position.quantity}} style="cursor: pointer;"></my-instrument>
+              <!-- Border -->
+              <!-- <div style="width:100; height:1px; background-color:#363F43;margin: 0px;"></div> -->
+        </template>
+        <!-- WATCHLIST -->
+        <div style="padding:15px 15px 5px;color: #30CD9A">Watchlist</div>
+        
+        <template is="dom-repeat" id="list" items="{{watchlist.results}}" as="watchlist" filter="isPosition" scroll-target="document" initial-count="12" >
+          <template is="dom-if" if="{{!_isMaxListItems(30, index)}}">  
+            <my-instrument instrumenturl={{watchlist.instrument}} token={{token}} style="cursor: pointer;"></my-instrument>
+          </template>
+            <!-- Border -->
+            <!-- <div style="width:100; height:1px; background-color:#363F43;margin: 0px;"></div> -->
+        </template>
+        
+      </iron-selector>
+      <template is="dom-if" if="{{isWatchlistShortened}}">  
+          <div style="padding:20px 20px 0 20px;text-align:center;color:#30CD9A">**IT'S TIME TO CLEAN UP**</div>
+          <div style="padding:0 20px 20px 20px;text-align:center;color:#30CD9A">Try to keep it under 30 items</div>
+      </template>
+    </div>
+
+</div>
+
+  </template>
+
+  <script>
+    class MyPortfolio extends Polymer.Element {
+      static get is() { return 'my-portfolio'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+
+          token: { 
+            type: String,
+            value: '', 
+          },
+
+          account:{
+            type: Object,
+            value: null,
+            observer: '_accountLoaded',
+           
+          },
+
+          user:{
+            type: Object,
+            value: null,           
+          },
+          accountnumber:{
+            type: String,
+            value: '',
+          },
+
+          portfolio:{
+            type: Object,
+            value: null,
+          },
+
+          positions: {
+            type: Object,
+            value: null,
+            observer: '_getwatchlist'
+          },
+
+          watchlist: {
+            type: Object,
+            value: null,
+          },
+          watchlistURL: {
+            type: String,
+            value: '',
+          },
+
+          symbol: { 
+            type: String,
+            value: '', 
+            notify: true,
+            reflectToAttribute: true,
+            observer: '_symbolChange',
+       
+          },
+
+          histurl:{
+            type: String,
+            value: '', 
+          },
+
+          historicalsaccount: {
+            type: Object,
+            value: null,
+            observer: '_histAccountLoaded',
+          },
+
+          accountchart: {
+            type: Object,
+            value: null,
+          }, 
+
+          windowWidth: {
+            type: Number,
+            value: 0,
+          },
+
+          chartOptSelected: {
+            type: String,
+            value: "span=day&interval=5minute&bounds=trading",
+            observer: '_chartSelectionChange',
+          },
+
+          positionsResults: {
+            type: Array,
+            value: [],
+          },
+
+          isWatchlistShortened: {
+            type: Boolean,
+            value: false
+          },
+          
+          buyingPower: {
+            type: Number
+          },
+
+          selecteditem: {
+            type: Object,
+          }        
+
+        };
+      }
+
+      ready() {
+        super.ready();
+      
+        window.addEventListener("resize",  e =>  this._onResize(e));
+        this._updateData();
+      };
+      
+      _accountLoaded(obj){
+        if(obj == null) return;
+        this. _calcBuyingPower2();
+        this.histurl =  'https://api.robinhood.com/portfolios/historicals/' + this.account.results[0].account_number + '/?'+ this.chartOptSelected
+      }
+
+      _calcBuyingPower2(){
+        var a = this.account.results[0];
+        this.buyingPower =  (parseFloat(a.buying_power) + ((a.sma == '')? 0:parseFloat(a.sma))).toFixed(2)
+      }
+
+      _calcBuyingPower(margin, cash) {
+        return this._roundWithPad(parseInt(margin) + parseInt(cash))
+      }
+
+      _calcCash(margin, buyingpower) {
+        return this._roundWithPad(parseInt(buyingpower) - parseInt(margin))
+      }
+
+      _isMaxListItems(max, index){
+        
+       if (index < max){
+         return false;
+       }
+       else {
+        this.isWatchlistShortened = true;
+        return true;
+       }
+      }
+      _chartSelectionChange(val){
+
+        if(this.accountchart == null) return;
+
+        this.accountchart.destroy();
+        this.accountchart = null;
+        this.histurl =  'https://api.robinhood.com/portfolios/historicals/' + this.account.results[0].account_number + '/?'+ val
+      };
+      
+      _onResize(e) {
+        if(this.accountchart == null) return;
+   
+        var widthChange = Math.abs(this.windowWidth - parseInt(window.innerWidth))
+        var newWidth = Math.abs(parseInt(this.$.myAccountChart.width) - widthChange)
+
+        this.$.myAccountChart.setAttribute('style', 'display:block;width:' + newWidth + 'px');
+
+        // redraws chart
+        this.accountchart.resize();
+
+        //set new size prop
+        this.windowWidth = window.outerWidth;
+      }
+
+      _onClose(){
+     
+        this.symbol = "";
+      }
+
+      _getwatchlist(){
+       
+        if (this.positions == null) return;
+   
+        this.watchlistURL = 'https://api.robinhood.com/watchlists/Default/';
+      }
+
+      isPosition(item) {
+       //filter watchlist items that are also positions
+       //item.instrument == this.positions.in
+       if (this.positions == null) return;
+       return item.instrument != this.search(item.instrument, this.positions.results)
+      };
+
+      search(nameKey, myArray){
+          for (var i=0; i < myArray.length; i++) {
+              if (myArray[i].instrument === nameKey) {
+                  return myArray[i].instrument;
+              }
+          }
+      }
+ 
+
+      getHeaders() {
+        return{'Authorization': 'Token ' +  this.token , "Accept": "*/*", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        };
+
+      _updateData() {
+        var vportfolio = this.$.portfolioajax;
+        var vhistoricals = this.$.historicalsAccountjax
+
+        setInterval(function() {  
+          if(!document.hidden){ 
+              vportfolio.generateRequest();
+              vhistoricals.generateRequest(); 
+            }
+          }, 6000);
+      }
+
+      _handleError(error) {
+        this.dispatchEvent(new CustomEvent('error', { bubbles: true, composed: true, detail: { error: error.detail.request.xhr.response } }));
+        
+      };
+
+      _symbolChange() {
+        
+        if (this.symbol == '') { 
+          var pages = this.$.portfolioPages;
+          pages.select = '';
+
+        }
+        else {
+
+          //this.$.instDetail.setAttribute('selectedItem', this.selectedItem)
+          // Load page import on demand. Show 404 page if fails
+          var resolvedPageUrl = this.resolveUrl('my-instrument-detail.html');
+
+          //href: string, onload: Function, onerror: Function, optAsync: boolean
+          Polymer.importHref(resolvedPageUrl, null, null, true);
+        }
+      }
+
+      _round(num) {
+       
+        if(num == null) return 0;
+        return (Math.round(num * 100) / 100 );
+      };
+
+      _roundWithPad(num) {
+        if(num == null) return 0;
+        return (Math.round(num * 100) / 100 ).toFixed(2)
+      };
+
+      _calcChange(currentPrice, priceFrom) {
+          
+        var change = (currentPrice - priceFrom);
+        var percentChange = ((change / priceFrom) * 100)  ;
+
+        return this._round(change) + ' ('  + ((percentChange > 0) ? '+' + this._round(percentChange): this._round(percentChange)) + '%)'
+    };
+      _priceMovement(currentPrice, priceFrom){
+        
+        var change = (currentPrice - priceFrom);
+
+        return (change >= 0) ? 'up': 'down';
+      };
+      
+
+      _doChartUpdate(newObj){
+
+        var labelsArray = this.accountchart.data.labels;
+        var lastOldPoint = new Date(labelsArray[labelsArray.length - 1]);
+
+        for (var i = 0; i < newObj.equity_historicals.length; i++) {
+            var newPoint = new Date(newObj.equity_historicals[i].begins_at);
+
+            if (newPoint > lastOldPoint ) {
+              this.accountchart.data.labels.push(newPoint)
+              this.accountchart.data.datasets[0].data.push((newObj.span.includes('year')) ? newObj.equity_historicals[i].adjusted_close_equity: newObj.equity_historicals[i].adjusted_open_equity);
+              
+              this.accountchart.update();
+            }
+        }
+      }
+
+      _histAccountLoaded(obj) {
+
+        if(obj == null) return;
+        
+        if(this.accountchart != null) {
+          this._doChartUpdate(obj)
+          
+        }
+        else{
+
+        var dts = obj.equity_historicals
+        var firstPlotPoint = new Date(dts[0].begins_at);
+
+        var times = [];
+        var prices = [];
+        
+        
+        //set the X and Y Axis   
+        for (var i = 0; i < dts.length; i++) {
+            times.push(new Date(dts[i].begins_at));
+            prices.push(((obj.span.includes('year')) ? dts[i].adjusted_close_equity: dts[i].adjusted_open_equity));
+        }
+
+        //remove the prev chart instance
+        if (this.accountchart != null) {this.accountchart.destroy()}
+        
+        //determine border color
+         var priceMove = this._priceMovement(this.portfolio.equity, this.portfolio.equity_previous_close);
+         var borderColor = (priceMove == 'down') ? '#F45531':'#30CD9A'
+        // var borderColor = '#F45531';
+
+        var ctx = this.$.myAccountChart
+
+       
+        this.accountchart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: times,
+                datasets: [
+                    {
+                        data: prices,
+                        fill: true,
+                        lineTension: 0.2,
+                        pointRadius: 0,
+                        borderWidth: 2.5,
+                        borderColor: borderColor,
+                        pointStyle: 'circle',
+                        pointBorderColor: borderColor,
+                        pointBackgroundColor: borderColor,
+                        backgroundColor: '#040D14',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                hover: { mode: 'index',intersect: false},
+                legend: {display: false},
+                scales: {
+                    yAxes: [{
+                        ticks: {autoSkip: true, beginAtZero: false, fontColor: '#a9aebd', fontSize: '13', display: false,},
+                        gridLines: { drawBorder: false, color: '#30333B', display: false,},
+                    }],
+                    xAxes: [{
+                        ticks: {fontColor: '#a9aebd', fontSize: '13', display: false,},
+                        gridLines: {display: false,}
+                    }]
+                },
+                tooltips: {
+                  mode: 'label',
+                  intersect: false,
+                  displayColors: false,
+                  borderColor: borderColor,
+                  borderWidth: 1,
+                  titleFontSize: 14,
+                  bodyFontSize: 15,
+                  caretPadding: 20,
+                  footerSpacing: 20,
+                  callbacks: {
+                    title: function (tooltipItem, data) { 
+                      var date = new Date(tooltipItem[0].xLabel);
+                      var vdate = date.getMonth() + 1 + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(-2);
+                      var time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                      return vdate + ' ' + ((obj.span.includes('year')) ? '':time);
+                    } 
+                  }               
+                }
+            }
+        });
+
+        }
+      }
+    }
+  
+
+    window.customElements.define(MyPortfolio.is, MyPortfolio);
+  </script>
+</dom-module>

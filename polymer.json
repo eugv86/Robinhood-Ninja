@@ -1,0 +1,33 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/my-app.html",
+  "fragments": [
+    "src/my-portfolio.html",
+    "src/my-login.html",
+    "src/my-history.html",
+    "src/my-instrument-detail.html",
+    "src/my-instrument.html",
+    "src/my-ticker-2.html",
+    "src/my-view404.html"
+  ],
+  "sources": [
+    "src/**/*",
+    "images/**/*",
+    "bower.json"
+  ],
+  "extraDependencies": [
+    "manifest.json",
+    "bower_components/webcomponentsjs/*.js",
+    "bower_components/jpillora/xhook/dist/xhook.js",
+    "SHA256.js"
+  ],
+  "lint": {
+    "rules": ["polymer-2"]
+  },
+  "builds": [
+    {
+      "preset": "es6-unbundled"
+    }
+  ]
+}
+

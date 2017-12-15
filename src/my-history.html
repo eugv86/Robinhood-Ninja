@@ -1,0 +1,97 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="my-history-item.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="simple-tracker.html">
+
+
+<dom-module id="my-history">
+  <template>
+    <simple-tracker id="googleanalytics"></simple-tracker>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        overflow:hidden; 
+        padding: 20px 40px;
+      }
+      .scrollContainer {
+        overflow:auto; 
+        height:calc(100% - 38px);
+      }
+
+      .scrollContainer:hover::-webkit-scrollbar-thumb{
+        background-color: #30CD9A;
+      }
+
+    </style>
+
+    <iron-ajax auto id="accountajax"
+        url="https://api.robinhood.com/orders/"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{history}}">
+    </iron-ajax>
+
+    <div class="scrollContainer">
+      <template is="dom-repeat" id="list" items="{{history.results}}" as="h">
+        
+        <my-history-item historyitem="{{h}}" token={{token}}></my-history-item>
+        
+      </template>
+    </div>
+
+  </template>
+
+  <script>
+    class MyHistory extends Polymer.Element {
+      static get is() { return 'my-history'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+
+          token: { 
+            type: String,
+            value: '', 
+          },
+
+          history:{
+            type: Object,
+            value: null,
+          },
+          username: {
+            type: String,
+            value: ''
+          }
+
+        };
+      }
+      ready() {
+        super.ready();
+
+        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
+        this.$.googleanalytics.gaTrackPageView('History');
+      };
+
+      _reset() {
+        this.$.accountajax.generateRequest();
+      }
+      getHeaders() {
+        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        };
+
+    }
+
+    window.customElements.define(MyHistory.is, MyHistory);
+  </script>
+</dom-module>

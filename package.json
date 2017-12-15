@@ -1,0 +1,24 @@
+{
+  "name": "robinhood-ninja",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-google": "^0.7.0",
+    "eslint-plugin-html": "^2.0.0"
+  },
+  "scripts": {
+    "lint": "npm run lint:javascript && polymer lint",
+    "lint:javascript": "eslint . --ext js,html --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "btoa": "^1.1.2",
+    "cors": "^2.8.4",
+    "express": "^4.15.4",
+    "request": "^2.83.0",
+    "robinhood": "^1.1.1"
+  },
+  "description": "Robinhood Web App",
+  "version": "1.0.0",
+  "main": "app.js",
+  "author": "Eugene Vygodner"
+}

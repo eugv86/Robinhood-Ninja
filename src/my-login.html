@@ -1,0 +1,251 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="simple-tracker.html">
+
+<dom-module id="my-login">
+  <template>
+    <simple-tracker id="googleanalytics"></simple-tracker>
+
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        padding-top:80px;
+        display: block;
+        
+        --paper-spinner-color: #30CD9A;
+        --paper-spinner-stroke-width: 3px;
+        
+         animation: fadein 2s;
+        -moz-animation: fadein 2s; /* Firefox */
+        -webkit-animation: fadein 2s; /* Safari and Chrome */
+        -o-animation: fadein 2s; /* Opera */
+      }
+
+      @keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-moz-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-webkit-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+      @-o-keyframes fadein {from {opacity:0;} to {opacity: 1;}}
+
+      :host::before{
+        content: ' ';
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("../images/BG.png");
+        background-repeat: no-repeat;
+        opacity: 0.4;
+        background-position: bottom;
+        background-size: contain;
+      }
+
+      h1{ margin:0px 30px; text-align: center }
+
+      .login-box{
+
+        padding: 0 30px;
+        color: #757575;
+        border-radius: 5px;
+        background-color: #fff;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      }
+
+      .box:after{
+          content: "beta";
+          position: absolute;
+          width: 98px;
+          height: 30px;
+          background:#F45531;
+          top: 9.3px;
+          left: -24.6px;
+          text-align: center;
+          font-size: 14px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          font-weight: bold;
+          color: #fff;
+          line-height: 32px;
+          -ms-transform:rotate(-45deg);
+          -webkit-transform:rotate(-45deg);
+          transform:rotate(-45deg);
+          -webkit-clip-path: polygon(30.5% 0, 70% 0, 100% 100%, 0% 100%);
+          clip-path: polygon(30.5% 0, 70% 0, 100% 100%, 0% 100%);
+          opacity: 0.9;
+        }
+      .btn_login{
+        margin:10px 0px 20px;
+        background-color: #30CD9A;
+        color: white;
+      }
+      .error{
+
+        color: #F45531;
+        padding-top: 15px;
+        text-align: center;
+        
+      }
+      .box{ position: relative;}
+      .spinner_box{
+        position:absolute;
+        top: 5px;
+        right: 5px;
+      }
+
+      @media only screen and (max-width: 768px)  { 
+        :host {
+          padding-top:0px;
+          background-color: white;
+          }
+          .login-box{
+            box-shadow: none;
+            width:85%;
+            font-size: 13px
+          }
+          .box:after{
+            position:fixed;
+          }
+          ul{font-size: 14px;}
+      }
+    </style>
+
+    <iron-media-query query="(max-width: 1024px)" query-matches="{{mobile}}"></iron-media-query>
+
+    <template is="dom-if" if="{{mobile}}">
+      <div class="layout vertical self-center login-box box" style="padding:20px;">
+          <img style="height:120px;margin:10px;" src="../images/manifest/logo_green_ninja.svg"></img>
+          <h1 style="margin:20px;">This is NOT for mobile devices. There's an app for that..</h1>
+          <div class="layout horizontal self-center">
+              <a href="https://play.google.com/store/apps/details?id=com.robinhood.android" target="_blank" style="margin:5px">
+                <img alt="Download on Google Play" src="https://d2ue93q3u507c2.cloudfront.net/assets/marketing/images/badges/google_play.png" data-at2x="https://d2ue93q3u507c2.cloudfront.net/assets/marketing/images/badges/google_play%402x.png">
+              </a>
+              <a href="https://itunes.apple.com/us/app/robinhood-free-stock-trading/id938003185?ls=1&amp;mt=8" target="_blank" style="margin:5px">
+                <img alt="Download on the App Store" src="https://d2ue93q3u507c2.cloudfront.net/assets/marketing/images/badges/app_store.png" data-at2x="https://d2ue93q3u507c2.cloudfront.net/assets/marketing/images/badges/app_store%402x.png">
+              </a>    
+          </div>
+
+          <div>If you find this message an error, please try the following:</div>
+          <ul style="list-style-type:circle; margin:5px 20px;font-size:14px; overflow: overlay;">
+            <li>Expand your browser screen.</li>
+            <li>Adjust screen resolution to 1024x768 or above.</li>
+            <li>Get new monitor.</li>
+            <li>Get new laptop</li>
+            <li>Use someone else's PC/ Monitor combo from the last two decades.</li>
+            <li>Give up.</li>
+          </ul>
+      </div>
+    </template>
+
+    <template is="dom-if" if="{{!mobile}}">
+      <div style="margin:20px 50px 0px;" class="self-center">
+          <div style="color:#30CD9A; font-size:48px;font-weight:600;text-align:center; opacity: 0.9;">Robinhood Ninja</div>
+          <div style="color:#ffff; font-size:20px;text-align:center">Track Your Robinhood Account in Your Desktop Browser.</div>
+          <div style="text-align:center;margin-top:10px;color:rgb(204, 204, 204)">
+            <div>Sign In with your Robinhood account</div>
+            <iron-icon class="self-center" style="width:50px;height:50px;" icon="expand-more"></iron-icon>
+          </div>
+      </div>
+
+      <div style="margin-top:10px;" class="layout vertical self-center box login-box">
+        <div class="layout horizontal center-justified">
+            <div class="self-center">
+              <img style="height:120px;" src="../images/manifest/logo_green_ninja.svg"></img>
+            </div>
+            
+            <div style="background-color:#30CD9A; width:3px; margin:0 30px;"></div>
+
+            <div class="layout vertical flex">
+              <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login"></iron-a11y-keys>
+              <paper-input label="Username" value="{{username}}" required ></paper-input>
+              <paper-input label="password" value="{{password}}" required type="password"></paper-input>
+              <paper-button class="btn_login" raised on-tap='login'>Login </paper-button>
+            </div>
+        </div>
+
+        <div class="spinner_box flex">
+          <paper-spinner-lite id="spinner"></paper-spinner-lite>
+        </div>
+
+      </div>
+      <template is="dom-if" if="{{error}}">
+        <div id="error" class="error layout self-centered">{{error}}</div>
+      </template>
+    </template>
+
+    <iron-ajax id="ajax"
+        url="{{url}}"
+        body='{"username": "{{username}}","password": "{{password}}"}'
+        headers='{"Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}'
+        method="POST"
+        handle-as="json"
+        on-response="_handleResponse"
+        on-error="_handleError"
+        debounce-duration="300"
+        bubbles>
+    </iron-ajax>
+
+  </template>
+  <script>
+    class MyLogin extends Polymer.Element {
+      static get is() { return 'my-login'; }
+      static get properties() {
+        return {
+          url: {
+            type: String
+          },
+          username: {
+            type: String,
+            value: ''
+          },
+          password: {
+            type: String,
+            value: ''
+          },
+          error: {
+            type: String,
+            value: ''
+          }
+        };
+      }
+      ready() {
+        
+        super.ready();
+      }
+      login() {
+       
+        this.shadowRoot.querySelector('#spinner').active = true;
+        this.$.ajax.generateRequest();
+      };
+
+      _handleResponse(data) {
+        /** GOOGLE ANALYTICS **/
+        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
+        this.$.googleanalytics.gaTrackPageView('Login');
+        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Sign-In Success')
+        /** GOOGLE ANALYTICS **/
+
+        this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.token } }));
+        };
+
+      _handleError(error) {
+        this.shadowRoot.querySelector('#spinner').active = false;
+        this.error = error.detail.request.xhr.response.non_field_errors;
+      };
+    }
+
+    window.customElements.define(MyLogin.is, MyLogin);
+  </script>
+</dom-module>

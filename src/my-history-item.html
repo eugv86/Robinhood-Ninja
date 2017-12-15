@@ -1,0 +1,237 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-history-item">
+  <template>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 0px;
+        color: #9e9e9e;
+        --paper-button: {
+          padding: 10px 0;
+        }
+      }
+      .detail {
+        padding:0px 40px;
+      }
+
+      table {
+          border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        padding: 5px 10px;
+      }
+      td {
+      
+        border-top: 1px solid #363F43;
+      }
+
+      td {
+        padding: 5px 10px;
+      }
+
+      .cancel_button{
+        background-color:#30CD9A;
+        color: white; 
+        padding:10px;
+        font-size: 14px;
+        line-height: .8;
+        height: 30px;
+        margin-right:35px
+      }
+
+    </style>
+
+    <iron-ajax auto id="instrumentajax"
+      url="{{historyitem.instrument}}"
+      headers= '{{headers}}'
+      handle-as="json"
+      last-response="{{instrument}}">
+    </iron-ajax>
+
+    <iron-ajax id="cancelajax"
+      url=""
+      headers= '{{headers}}'
+      handle-as="json"
+      method="POST"
+      last-response="{{cancelresponse}}">
+    </iron-ajax>
+
+    
+    <paper-button class="layout horizontal flex" id$="bt_readmore" on-tap="toggle">
+      <div class="layout horizontal flex">
+        <div class="layout vertical" style="width:160px">
+          <div><span style="color:aquamarine">[[instrument.symbol]]:</span> [[historyitem.type]] [[historyitem.side]]</div>
+          <div secondary>[[_formatDate(historyitem.updated_at, 'false')]]</div>
+        </div>
+        <div class="self-center" style="padding-left:40px;">
+          <template is="dom-if" if="{{historyitem.average_price}}"><div>Price: $[[_round(historyitem.average_price, 2)]]</div></template>
+          <template is="dom-if" if="{{!historyitem.average_price}}"><div>Price: $[[_round(historyitem.price, 2)]]</div></template>
+        </div>
+        <div class="self-center" style="padding-left:40px;">Quantity: [[_round(historyitem.quantity, 0)]]</div> 
+        <div class="flex"></div>
+        
+        <template is="dom-if" if="{{cancancel}}">
+            <paper-button class="cancel_button self-center" on-tap="_cancelOrder" title="Cencel Order" >Cancel</paper-button>
+        </template>
+        
+        <div class="self-center" style="width:120px">{{getstatus(historyitem.state, historyitem.average_price, historyitem.quantity)}}</div>
+      </div>
+    </paper-button>
+
+    <iron-collapse id$="collapse{{historyitem.id}}">
+
+      <template is="dom-if" if="{{_hasRows(historyitem.executions)}}">
+        <div class="detail">
+          <table style="width:100%">
+            <tr>
+              <th>Date/ Time</th>
+              <th>Price</th> 
+              <th>Settlement Date</th>
+              <th>Quantity</th>
+            </tr>
+            <template is="dom-repeat" id="list" items="{{historyitem.executions}}" as="e">
+              <tr>
+                <td>[[_formatDate(e.timestamp, 'true')]]</td><td>$[[_round(e.price, 2)]]</td><td>[[e.settlement_date]]</td><td>[[_round(e.quantity, 0)]]</td>
+              </tr>
+            </template>
+          </table>
+        </div>
+      </template>
+        
+    </iron-collapse>
+    <div style="width:100%;height:1px; background-color:#363F43;"></div>
+  </template>
+
+  <script>
+    class MyHistoryItem extends Polymer.Element {
+      static get is() { return 'my-history-item'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+          instrument: {
+            type:Object,
+            value: null,
+          },
+
+          token: { 
+            type: String,
+            value: '', 
+          },
+
+          historyitem:{
+            type: Object,
+            value: null,
+          },
+
+          cancelresponse: {
+            type: Object,
+            value: null,
+            observer: '_cancelcheck'
+          },
+
+          cancancel: {
+            type: Boolean,
+            value: false
+          }
+
+        };
+      }
+      ready() {
+        super.ready();
+      };
+
+      _cancelOrder(){
+        this.cancancel = false;
+        this.$.cancelajax.url = this.historyitem.cancel
+        this.$.cancelajax.generateRequest();
+      }
+      
+      _cancelcheck(o){
+        if (o == null) { return}
+
+        
+        if(Object.keys(o).length == 0){
+          this.historyitem.state = 'CANCELLED'
+          this.notifyPath('historyitem.state');
+          this.cancancel = false;
+        } 
+        else { 
+          //alert(o.detail) 
+          this.cancancel = true;
+        }
+      }
+      
+      toggle(event, detail,sender) {
+        var id = this.historyitem.id;
+        var selector = '#collapse' + id;
+        this.shadowRoot.querySelector(selector).toggle();
+      }
+
+      getstatus(state, price, qty) {
+        switch (state) {
+          case 'confirmed':
+              this.cancancel = true;
+              return 'PENDING'
+            break;
+
+          case 'queued':
+            this.cancancel = true;
+            return 'QUEUED'
+          break;
+
+          case 'filled':
+              return '$' + this._round((price * qty), 2)
+            break;  
+
+          default:
+          return state;
+            break;
+        }
+      }
+
+      _round(num, toFixed) {
+       
+        if(num == null) return 'N/A';
+        return (Math.round(num * 100) / 100 ).toFixed(toFixed)
+      };
+
+      _formatDate(dt, withSec){
+        var date = new Date(dt);
+        var vdate = date.getMonth() + 1 + '/' + date.getDate() + '/' + date.getFullYear().toString().substr(-2);
+
+        if (withSec == 'true'){
+          var time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        }
+        else {
+          var time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+       
+        return vdate + ' ' + time;
+      }
+
+      _hasRows(a){
+        return (a.length > 0)? true : false;
+      }
+
+      getHeaders() {
+        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        };
+    }
+
+    window.customElements.define(MyHistoryItem.is, MyHistoryItem);
+  </script>
+</dom-module>

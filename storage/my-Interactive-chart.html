@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html style="height:100%">
+
+<body style="height:100%;margin:0;padding:0px;overflow:hidden;">
+<div style="height:100%">
+<script>
+ var qs = (function(a) {
+        if (a == "") return {};
+        var b = {};
+        for (var i = 0; i < a.length; ++i)
+        {
+            var p=a[i].split('=', 2);
+            if (p.length == 1)
+                b[p[0]] = "";
+            else
+                b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+        }
+        return b;
+        })(window.location.search.substr(1).split('&'));
+
+</script>
+
+    <!-- TradingView Widget BEGIN -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script type="text/javascript">
+        new TradingView.widget({
+        "autosize": true,
+        "symbol":  qs["symbol"],
+        "interval": "D",
+        "timezone": "exchange",
+        "theme": "Light",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "rgba(255, 255, 255, 1)",
+        "enable_publishing": false,
+        "withdateranges": true,
+        "hide_side_toolbar": false,
+        "hideideas": true,
+        "studies": [
+                "MASimple@tv-basicstudies",
+                "MAExp@tv-basicstudies",
+                "StichasticRSI@tv-basicstudies"
+            ]
+        });
+
+       
+    </script>
+    <!-- TradingView Widget END -->
+
+
+</div>
+</body>
+</html>

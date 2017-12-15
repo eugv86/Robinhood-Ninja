@@ -1,0 +1,314 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/scary-cookie/scary-cookie.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<link rel="lazy-import" href="my-portfolio.html">
+<link rel="lazy-import" href="my-history.html">
+<link rel="lazy-import" href="my-view404.html">
+
+<link rel="import" href="my-help.html">
+<link rel="import" href="my-ticker-2.html">
+<link rel="import" href="simple-tracker.html">
+
+<script src="../bower_components/moment/moment.js"></script>
+
+<dom-module id="my-app">
+  <template>
+
+    <simple-tracker id="googleanalytics"></simple-tracker>
+    <scary-cookie id="cookie" name="authCookie" value="{{token}}" expires="{{expiredate}}" disable-autosave></scary-cookie>
+
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        --app-primary-color: #1A1E24;
+        --app-secondary-color: #FEFEFE;
+        --app-drawer-width: 85px;
+        --paper-input-container-underline-focus: {
+            border-bottom: 2px solid #30CD9A;
+        };
+
+        display: block;
+      }
+
+    #contentContainer {
+      overflow: hidden!important;
+    }
+    
+      app-drawer {
+        --app-drawer-content-container: {
+            background-color: var(--app-primary-color);
+        };
+      }
+
+      app-drawer > app-toolbar {
+        background-color: #30CD9A;
+        padding:0;
+      }
+
+      app-toolbar{ height:85px; padding: 0}
+
+      app-drawer-layout:not([narrow]) [drawer-toggle] {
+        display: none;
+      }
+
+      app-header {
+        color: #FEFEFE;
+        background-color: var(--app-primary-color);
+      }
+
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: #FEFEFE;
+      }
+
+      .drawer-list {
+        height: calc(100% - 85px);
+        --paper-icon-button: {
+          height:40px; 
+          width:40px;
+          padding: 4px;
+        }
+      }
+
+      .drawer-list a {
+        display: block;
+        padding: 15px 10px;
+        text-decoration: none;
+        color: var(--app-secondary-color);
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .drawer-list a.iron-selected {
+        --paper-icon-button:{
+            color: #30CD9A;
+            height:40px; 
+            width:40px;
+            padding: 4px;
+          }
+      }
+
+      .logo {padding:5px; height:85px; width:85px;}
+    </style>
+
+    <app-location route="{{route}}" url-space-regex="^[[rootPath]]"></app-location>
+    <app-route
+        route="{{route}}"
+        pattern="[[rootPath]]:page"
+        data="{{routeData}}"
+        tail="{{subroute}}"></app-route>
+
+    <app-drawer-layout fullbleed narrow="{{narrow}}" responsive-width="0px" >
+      <template is="dom-if" if="{{token}}">
+        <!-- Drawer content -->
+        <app-drawer id="drawer" slot="drawer" swipe-open="[[narrow]]">
+
+          <app-toolbar style="background-color:#30CD9A">
+              <paper-icon-button class="logo" src="../images/manifest/logo_white_ninja.svg"></paper-icon-button>
+          </app-toolbar>
+
+          <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list layout vertical flex" role="navigation">
+            <a name="portfolio" href="[[rootPath]]portfolio"><paper-icon-button icon="trending-up"></paper-icon-button>Portfolio</a>
+            <a name="history" href="[[rootPath]]history"><paper-icon-button icon="history"></paper-icon-button>History</a>
+            
+            <paper-icon-button style="margin-top:15px;" class="layout horizontal self-center" icon="announcement" on-tap='_openDialog' data-id="infoDialog"></paper-icon-button>
+            <div class="flex"></div>
+            <a><paper-icon-button  icon="help" on-tap='_openDialog' data-id="supportDialog"></paper-icon-button>Help</a>
+
+            <a name="logout" style="color: #21ce99" href="" on-tap='logout'><paper-icon-button on-tap='logout' icon="power-settings-new"></paper-icon-button>Sign out</a>
+          </iron-selector>
+
+        </app-drawer>
+      </template>
+      <!-- Main content -->
+      <app-header-layout has-scrolling-region>
+
+        <app-header slot="header"  fixed effects="waterfall">
+          
+          <template is="dom-if" if="{{token}}">
+            <iron-ajax auto id="userajax"
+                url="https://api.robinhood.com/user/"
+                headers= '{{getHeaders(token)}}'
+                method="GET"
+                handle-as="json"
+                last-response="{{user}}">
+            </iron-ajax>
+
+            <app-toolbar>
+              <paper-icon-button icon="my-icons:menu" drawer-toggle></paper-icon-button>
+              <div class="layout horizontal flex">
+                <div class="flex" main-title>
+                  <my-ticker-2 name="ticker"></my-ticker-2>
+                </div>
+            </app-toolbar>
+          </template>
+
+        </app-header>
+
+        <iron-pages
+            selected="[[page]]"
+            attr-for-selected="name"
+            fallback-selection="view404"
+            role="main" style="height:100%"
+            class="flex layout vertical">
+            
+          <my-login name="login" 
+                    url="https://api.robinhood.com/api-token-auth/" 
+                    on-success="handleResponse"
+                    class="flex layout vertical">
+          </my-login>
+          <my-portfolio name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
+          <my-account name="account" token={{token}}></my-account>
+          <my-history id="histview" st name="history" username={{user.username}} token={{token}} style="height:100%"></my-history>
+          <my-view404 name="view404"></my-view404>
+          <my-help name="help"></my-help>
+        </iron-pages>
+
+      </app-header-layout>
+    </app-drawer-layout>
+
+    <paper-dialog id="infoDialog" modal>
+      <h2>Features Coming Soon</h2>
+      <ul style="list-style-type:circle; margin:20px;font-size:16px;">
+        <li style="padding:5px;"><b>Contact Us:</b> Provide the user with an ability to contact us with questions or bug reports.</li>
+        <li style="padding:5px;"><b>History:</b> Add history grid filters(by symbol, status, etc).</li>
+        <li style="padding:5px;"><b>Robinhood Notifications:</b> Display notification that are currently found under your chart on the main screen of the mobile app.</li>
+        <li style="padding:5px;"><b>Top Movers:</b> Top movers for the day.</li>
+        <li style="padding:5px;"><b>Economic Calendar:</b> Economic Calendar would show key upcoming economic events, announcements and news.</li>
+        <li style="padding:5px;"><b>Symbol Search:</b> Search for a stock symbol and be able to add to your watchlist.</li>
+        <li style="padding:5px;"><b>Screener:</b> Add a screener widget with custom filters and preset indicators.</li>
+      </ul>
+      <div class="layout horizontal end-justified" style="margin-top:10px;"><paper-button dialog-confirm raised style="background-color:#30CD9A;color:white">CLOSE</paper-button></div>
+    </paper-dialog>
+
+    <paper-dialog modal id="supportDialog">
+      <my-help></my-help>
+    </paper-dialog>
+
+  </template>
+
+  <script>
+    class MyApp extends Polymer.Element {
+      static get is() { return 'my-app'; }
+
+      static get properties() {
+        return {
+          page: {
+            type: String,
+            reflectToAttribute: true,
+            observer: '_pageChanged',
+          },
+          routeData: Object,
+          subroute: String,
+          // This shouldn't be neccessary, but the Analyzer isn't picking up
+          // Polymer.Element#rootPath
+          rootPath: String,
+          token: { 
+            type: String,
+            value: '', 
+            notify: true,
+          },
+          user: {
+            type: Object,
+            value: null,
+          },
+          expiredate: {
+            type: String,
+            computed: '_cookieExpireDate()'
+          }
+        };
+      }
+
+      static get observers() {
+        return [
+          '_routePageChanged(routeData.page)',
+        ];
+      }
+
+      ready() {
+        super.ready();
+      };
+
+      logout() {
+        
+        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.googleanalytics.gaSetUserId(SHA256(this.user.username));
+        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Sign-Out')
+        
+        this.token = null;
+        this.$.cookie.deleteCookie();
+        //this.page = 'login';
+        location.reload();
+        
+      }
+      _cookieExpireDate(){
+        var today = moment();
+        var tomorrow = moment(today).add(1, 'days').startOf('day');
+        return tomorrow.toString()
+      }
+
+      getHeaders(val) {
+        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+      };
+
+
+      _routePageChanged(page) {
+        // If no page was found in the route data, page will be an empty string.
+        // login page if no token present 
+
+        this.page = ((this.token != undefined ) ? page: 'login') || 'portfolio';
+        
+        //make history view get new data
+        if (page == 'history' && this.$.histview.offsetHeight > 0){this.$.histview._reset()}
+
+      }
+
+      _pageChanged(page) {
+       // Load page import on demand. Show 404 page if fails
+        var resolvedPageUrl = this.resolveUrl('my-' +  page + '.html');
+
+        Polymer.importHref(resolvedPageUrl, null, this._showPage404.bind(this), true);
+      }
+
+      _openDialog(e){
+        var dialogID = e.target.getAttribute('data-id');
+        var selector = '#' + dialogID;
+        this.shadowRoot.querySelector(selector).toggle();
+      }
+
+      _showPage404() {
+        this.page = 'view404';
+      }
+
+      handleResponse(e) {      
+        this.token = e.detail.token
+        this.page = 'portfolio';
+      }
+
+
+      handleError(e) {
+        alert(e.detail.error);
+      }
+    }
+
+    window.customElements.define(MyApp.is, MyApp);
+  </script>
+</dom-module>
