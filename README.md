@@ -11,7 +11,7 @@ Unofficial Robinhood API documentation: https://github.com/sanko/Robinhood
 ### If you feel like setting this up locally;
 ### Clone
 
-   $ git clone  https://github.com/eugv86/Robinhood-Ninja
+    git clone  https://github.com/eugv86/Robinhood-Ninja
 
 ### Setup
 
