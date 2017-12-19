@@ -36,6 +36,7 @@ Third, install dependencies
 ### Start the development server
 
 This command serves the app at `http://127.0.0.1:8081`
+
     polymer serve
 
 ### Build
