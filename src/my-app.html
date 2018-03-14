@@ -21,6 +21,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 
 <link rel="lazy-import" href="my-portfolio.html">
+<link rel="lazy-import" href="my-mfa.html">
 <link rel="lazy-import" href="my-history.html">
 <link rel="lazy-import" href="my-view404.html">
 
@@ -173,8 +174,10 @@
           <my-login name="login" 
                     url="https://api.robinhood.com/api-token-auth/" 
                     on-success="handleResponse"
-                    class="flex layout vertical">
+                    on-needmfa="needmfa"
+                    class="flex layout horizontal around-justified">
           </my-login>
+          <my-mfa name="mfa" on-success="handleResponse" mfatype={{mfatype}} mfarequired={{mfarequired}} u={{u}} p={{p}} class="flex layout horizontal around-justified"></my-mfa>
           <my-portfolio name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
           <my-account name="account" token={{token}}></my-account>
           <my-history id="histview" st name="history" username={{user.username}} token={{token}} style="height:100%"></my-history>
@@ -188,8 +191,7 @@
     <paper-dialog id="infoDialog" modal>
       <h2>Features Coming Soon</h2>
       <ul style="list-style-type:circle; margin:20px;font-size:16px;">
-        <li style="padding:5px;"><b>Contact Us:</b> Provide the user with an ability to contact us with questions or bug reports.</li>
-        <li style="padding:5px;"><b>History:</b> Add history grid filters(by symbol, status, etc).</li>
+        <li style="padding:5px;"><b>History Filters:</b> Add history grid filters(by symbol, status, etc).</li>
         <li style="padding:5px;"><b>Robinhood Notifications:</b> Display notification that are currently found under your chart on the main screen of the mobile app.</li>
         <li style="padding:5px;"><b>Top Movers:</b> Top movers for the day.</li>
         <li style="padding:5px;"><b>Economic Calendar:</b> Economic Calendar would show key upcoming economic events, announcements and news.</li>
@@ -233,7 +235,17 @@
           expiredate: {
             type: String,
             computed: '_cookieExpireDate()'
-          }
+          },
+          mfarequired:{
+            type: Boolean,
+            value: false,
+          },
+          mfatype: {
+            type: String,
+            value: null,
+          },
+          u: String,
+          p: String,
         };
       }
 
@@ -245,6 +257,7 @@
 
       ready() {
         super.ready();
+        //this.$.tracker.gaCreate('UA-108478575-1');
       };
 
       logout() {
@@ -298,11 +311,20 @@
         this.page = 'view404';
       }
 
-      handleResponse(e) {      
+      handleResponse(e) {    
+ 
         this.token = e.detail.token
         this.page = 'portfolio';
       }
-
+      
+      needmfa(e){
+        //alert(e.detail.mfaRequired)
+        this.mfarequired = e.detail.mfarequired;
+        this.mfatype = e.detail.mfatype;
+        this.u = e.detail.username;
+        this.p = e.detail.password;
+        this.page = 'mfa';
+      }
 
       handleError(e) {
         alert(e.detail.error);
