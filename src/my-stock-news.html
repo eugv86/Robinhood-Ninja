@@ -72,7 +72,7 @@
 
     <h2 style="margin-top:0">RECENT NEWS: {{symbol}}</h2>
     <div class="scrollContainer">
-      <template is="dom-repeat" id="list" items="{{newsObject.results}}" as="n">
+      <template is="dom-repeat" id="list" items="{{newsObject.results}}" as="n" rendered-item-count="{{renderedCount}}>
         
         <div class="layout horizontal list-item">
           <a href="{{n.url}}" target="_blank" tabindex="-1" style="text-decoration:none; color:inherit;">
@@ -90,7 +90,10 @@
             </paper-button>
           </a>
         </div>
-     
+      </template>
+      <template is="dom-if" if="{{!renderedCount}}">
+       <h1 style="font-size:70px; text-align:center">¯\_(ツ)_/¯</h1>
+       <h3 style="text-align:center">no news is good news</h3>
       </template>
     </div>
   </template>
@@ -120,7 +123,7 @@
             type: Object,
             value: null,
           },
-
+          renderedCount: Number,
           months: {
             type: Array,
             value : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
