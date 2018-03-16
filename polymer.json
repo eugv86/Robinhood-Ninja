@@ -18,7 +18,7 @@
   "extraDependencies": [
     "manifest.json",
     "bower_components/webcomponentsjs/*.js",
-    "bower_components/jpillora/xhook/dist/xhook.js",
+    "bower_components/xhook/dist/xhook.js",
     "SHA256.js"
   ],
   "lint": {
