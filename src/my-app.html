@@ -257,7 +257,6 @@
 
       ready() {
         super.ready();
-        //this.$.tracker.gaCreate('UA-108478575-1');
       };
 
       logout() {
@@ -318,7 +317,6 @@
       }
       
       needmfa(e){
-        //alert(e.detail.mfaRequired)
         this.mfarequired = e.detail.mfarequired;
         this.mfatype = e.detail.mfatype;
         this.u = e.detail.username;
