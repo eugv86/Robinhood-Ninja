@@ -136,12 +136,8 @@
             <div class="horizontal start-justified layout flex">
               <div class="value_card">
                 <div title>Buying Power</div>
-                <!-- <div main>${{_calcBuyingPower(account.results.0.margin_balances.margin_limit, account.results.0.margin_balances.cash)}}</div> -->
-                <!-- <div main>${{_roundWithPad(account.results.0.margin_balances.unallocated_margin_cash)}}</div> -->
                 <div main>${{buyingPower}}</div>
-               
-                <div small style="color:#9e9e9e">Cash ${{_calcCash(account.results.0.margin_balances.margin_limit, account.results.0.margin_balances.unallocated_margin_cash )}}</div>
-
+                <div small style="color:#9e9e9e">Cash ${{_roundWithPad(account.results.0.cash)}}</div>
               </div>
             </div>
 
@@ -338,7 +334,13 @@
 
       _calcBuyingPower2(){
         var a = this.account.results[0];
-        this.buyingPower =  (parseFloat(a.buying_power) + ((a.sma == '')? 0:parseFloat(a.sma))).toFixed(2)
+       
+        if (a.type == 'margin') {
+          this.buyingPower = (parseFloat(a.margin_balances.margin_limit) + parseFloat(a.margin_balances.cash)).toFixed(2)
+        }
+        else {
+           this.buyingPower = a.cash.toFixed(2);
+        };
       }
 
       _calcBuyingPower(margin, cash) {
