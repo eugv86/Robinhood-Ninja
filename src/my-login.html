@@ -15,14 +15,14 @@
 
 <dom-module id="my-login">
   <template>
-    <simple-tracker id="googleanalytics"></simple-tracker>
+    <simple-tracker style="position:absolute" id="tracker"></simple-tracker>
 
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
-        padding-top:80px;
+        padding-bottom:30px;
         display: block;
-        
+
         --paper-spinner-color: #30CD9A;
         --paper-spinner-stroke-width: 3px;
         
@@ -56,11 +56,12 @@
 
       .login-box{
 
-        padding: 0 30px;
+        padding: 10px 30px;
         color: #757575;
         border-radius: 5px;
         background-color: #fff;
         box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+        width:425px;
       }
 
       .box:after{
@@ -93,7 +94,7 @@
       .error{
 
         color: #F45531;
-        padding-top: 15px;
+        padding-top: 8px;
         text-align: center;
         
       }
@@ -149,7 +150,7 @@
     </template>
 
     <template is="dom-if" if="{{!mobile}}">
-      <div style="margin:20px 50px 0px;" class="self-center">
+      <div style="position:absolute; padding-bottom:390px;" class="self-center">
           <div style="color:#30CD9A; font-size:48px;font-weight:600;text-align:center; opacity: 0.9;">Robinhood Ninja</div>
           <div style="color:#ffff; font-size:20px;text-align:center">Track Your Robinhood Account in Your Desktop Browser.</div>
           <div style="text-align:center;margin-top:10px;color:rgb(204, 204, 204)">
@@ -158,7 +159,7 @@
           </div>
       </div>
 
-      <div style="margin-top:10px;" class="layout vertical self-center box login-box">
+      <div class="layout vertical self-center box login-box">
         <div class="layout horizontal center-justified">
             <div class="self-center">
               <img style="height:120px;" src="../images/manifest/logo_green_ninja.svg"></img>
@@ -169,7 +170,7 @@
             <div class="layout vertical flex">
               <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login"></iron-a11y-keys>
               <paper-input label="Username" value="{{username}}" required ></paper-input>
-              <paper-input label="password" value="{{password}}" required type="password"></paper-input>
+              <paper-input label="Password" value="{{password}}" required type="password"></paper-input>
               <paper-button class="btn_login" raised on-tap='login'>Login </paper-button>
             </div>
         </div>
@@ -177,11 +178,11 @@
         <div class="spinner_box flex">
           <paper-spinner-lite id="spinner"></paper-spinner-lite>
         </div>
-
+        <template is="dom-if" if="{{error}}">
+            <div id="error" class="error layout self-centered">{{error}}</div>
+          </template>
       </div>
-      <template is="dom-if" if="{{error}}">
-        <div id="error" class="error layout self-centered">{{error}}</div>
-      </template>
+      
     </template>
 
     <iron-ajax id="ajax"
@@ -230,14 +231,29 @@
       };
 
       _handleResponse(data) {
-        /** GOOGLE ANALYTICS **/
-        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
-        this.$.googleanalytics.gaTrackPageView('Login');
-        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Sign-In Success')
-        /** GOOGLE ANALYTICS **/
 
-        this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.token } }));
+        if (data.detail.response.mfa_required)
+        {
+          this.dispatchEvent(new CustomEvent('needmfa', { bubbles: true, composed: true, 
+            detail: { 
+                mfarequired: data.detail.response.mfa_required, 
+                mfatype: data.detail.response.mfa_type ,
+                username: this.username,
+                password: this.password,
+                } 
+            }));
+
+        }
+        else {
+          /** GOOGLE ANALYTICS **/
+          this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+          this.$.tracker.gaSetUserId(SHA256(this.username));
+          this.$.tracker.gaTrackPageView('Login');
+          this.$.tracker.gaTrackEvent('App-Actions', 'Sign-In Success')
+          /** GOOGLE ANALYTICS **/
+
+          this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.token } }));
+        }
         };
 
       _handleError(error) {
