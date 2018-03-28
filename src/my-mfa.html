@@ -19,48 +19,40 @@
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
-        padding-bottom:30px;
+        position:relative;
         display: block;
         --paper-spinner-color: #30CD9A;
         --paper-spinner-stroke-width: 3px;
+        --paper-input-container-color: #30CD9A;
+        --paper-input-container-label:{
+          color:#747474;
+        };
         
-         animation: fadein 2s;
-        -moz-animation: fadein 2s; /* Firefox */
-        -webkit-animation: fadein 2s; /* Safari and Chrome */
-        -o-animation: fadein 2s; /* Opera */
+         animation: animateright .6s;
+        
       }
-      :host::before{
-        content: ' ';
-        display: block;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url("../images/BG.png");
-        background-repeat: no-repeat;
-        opacity: 0.4;
-        background-position: bottom;
-        background-size: contain;
-      }
+      @keyframes animateright{from{right:-300px;opacity:0} to{right:0;opacity:1}}
+
       .login-box{
-        padding: 10px 30px;
+
+        padding: 60px;
         color: #757575;
-        border-radius: 5px;
-        background-color: #fff;
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        width:425px;
-      }
+        /* border-radius: 5px; */
+
+        /* box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2); */
+
+
+        }
       
       .btn_login{
-        margin:10px 0px 20px;
+        margin:10px 0 20px 0;
         background-color: #30CD9A;
         color: white;
-        width: 64%
+        width: 61%
       }
 
        .btn_back{
-        margin:10px 0px 20px;
+        margin:10px 10px 20px 0;
         background-color: #30CD9A;
         color: white;
       }
@@ -79,36 +71,34 @@
       }
     </style>
 
-    <div style="margin-top:10px;" class="self-center box login-box">
-      <div class="layout horizontal center-justified">
-          <div class="self-center">
-            <iron-icon class="self-center" style="width:120px;height:120px;color:#30CD9A" icon="lock"></iron-icon>
-            <!-- <img style="height:120px;" src="../images/manifest/logo_green_ninja.svg"></img> -->
-          </div>
-          
-          <div style="background-color:#30CD9A; width:3px; margin:0 30px;"></div>
+    <div class="box login-box layout horizontal flex">
+      <div class="self-center flex">
 
-          <div class="layout vertical flex">
-            <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login_mfa"></iron-a11y-keys>
-            <h3>Two-Factor Authentication</h3>
-            <span>[[_mfaToSimpleName(mfatype)]]</span>
-            <paper-input id="txtCode" label="Code" value="{{mfacode}}" required ></paper-input>
-            <div class="horizontal flex">
-              <a href="javascript:window.location.reload();" style="text-decoration: none;"><paper-button class="btn_back" raised>Back</paper-button></a>
-              <paper-button id="btnContinue"  class="btn_login" raised on-tap='login_mfa'>Continue</paper-button>
-            </div>
-           
+        <div class="layout horizontal center-justified">
+          <iron-icon class="self-center" style="width:120px;height:120px;color:#30CD9A" icon="lock"></iron-icon>
+        </div>
+
+        <div class="layout vertical flex">
+          <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login_mfa"></iron-a11y-keys>
+          <h3 style=" letter-spacing: 1px;">Two-Factor Authentication</h3>
+          <span>[[_mfaToSimpleName(mfatype)]]</span>
+          <paper-input id="txtCode" label="Code" value="{{mfacode}}" required autofocus></paper-input>
+          <div class="horizontal flex">
+            <a href="javascript:window.location.reload();" style="text-decoration: none;"><paper-button class="btn_back" raised>Back</paper-button></a>
+            <paper-button id="btnContinue"  class="btn_login" raised on-tap='login_mfa'>Continue</paper-button>
           </div>
+        </div>
+        <template is="dom-if" if="{{error}}">
+          <div id="error" class="error layout self-centered">{{error}}</div>
+        </template>
       </div>
 
       <div class="spinner_box flex">
         <paper-spinner-lite id="spinner"></paper-spinner-lite>
       </div>
-      <template is="dom-if" if="{{error}}">
-        <div id="error" class="error layout self-centered">{{error}}</div>
-      </template>
+    
     </div>
-  
+    
 
     <iron-ajax id="ajax"
         url="https://api.robinhood.com/api-token-auth/"
