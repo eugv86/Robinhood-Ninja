@@ -1,0 +1,136 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="my-sparkline">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      .sparkline svg {
+        stroke: #9e9e9e;
+        stroke-width: 1px;
+        stroke-opacity: .75
+      }
+
+      .sparkline[change=up]>svg {
+        stroke:#30CD9A;
+      }
+
+      .sparkline[change=down]>svg {
+        stroke:#F45531;
+      }
+    </style>
+
+      <span id="sparkline" class="sparkline" change$="{{change}}"></span>
+
+  </template>
+
+  <script>
+    class MySparkline extends Polymer.Element {
+      static get is() { return 'my-sparkline'; }
+      static get properties() {
+        return {
+          rootPath: String,
+          height: String,
+          width: String,
+          color: String,
+          change: String,
+          datastring: {
+            type: String,
+            observer: 'load',
+
+          },
+
+        };
+      }
+      ready() {
+        super.ready();
+      };
+
+      load() {
+
+        if(this.datastring == '') return;
+
+        var elms = this.$.sparkline;
+        elms.innerHTML = "";
+        // for (var i = 0; i < elms.length; i++) {
+          var e = elms;
+          var values = this.datastring.split(',').map(function(d) { return parseFloat(d); });
+         
+          var height = this.height //this.getDefaultFontSize(e)[1];
+         
+          if (e.classList.contains('sparkline-filled')) {
+            this.makeChart(values, height, e, true);
+          } else {
+            this.makeChart(values, height, e, false);
+          }
+        // }
+      }
+
+      makeChart(values, height, parent, filled) {
+        var width = this.width;
+        height = height - 2;
+        var max = Math.max.apply(null, values);
+        var min = Math.min.apply(null, values);
+        
+
+
+        function c(x) {
+          var s = height / (max - min);
+          return height - (s * (x - min));
+        }
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+
+       
+        svg.setAttribute('width', width);
+        svg.setAttribute('height', height);
+        svg.setAttribute('transform', 'translate(0,1)');
+
+        var offset = Math.round(width/(values.length - 1));
+        var path = 'M0 ' + c(values[0]);
+        
+        var w = values.length < width ? 1 : values.length / width 
+
+        for (var i = 0; i < values.length; i++) {
+          path += ' L ' + ((i/w) * offset) + ' ' + (c(values[i]));
+        }
+      
+
+        var center =  (width - ((values.length-1)/w * offset))/2 ;
+
+        var pathElm = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathElm.setAttribute('d', path);
+        pathElm.setAttribute('fill', 'none');
+        pathElm.setAttribute('transform', 'translate(' + center + ', 0)');
+        svg.appendChild(pathElm);
+
+        if (filled) {
+          path += ' V ' + height;
+          path += ' L 0 ' + height + ' Z';
+          var e = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          e.setAttribute('d', path);
+          e.setAttribute('stroke', 'none');
+          svg.appendChild(e);
+        }
+
+        parent.appendChild(svg);
+      }
+
+      getDefaultFontSize(pa) {
+          pa= pa || document.body;
+          var who= document.createElement('div');
+
+          who.style.cssText='display:inline-block; padding:0; line-height:1; position:absolute; visibility:hidden; font-size:1em';
+
+          who.appendChild(document.createTextNode('M'));
+          pa.appendChild(who);
+          var fs= [who.offsetWidth, who.offsetHeight];
+          pa.removeChild(who);
+          return fs;
+      }
+    }
+
+    window.customElements.define(MySparkline.is, MySparkline);
+  </script>
+</dom-module>
