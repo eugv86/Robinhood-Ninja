@@ -1,10 +1,14 @@
 <script src="../bower_components/jquery/dist/jquery.min.js"></script>
 
+
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+
+<link rel="import" href="my-sparkline.html">
+
 
 
 <link rel="import" href="shared-styles.html">
@@ -48,6 +52,8 @@
       }
 
 
+
+
     </style>
 
 <iron-ajax auto id="instrumentajax"
@@ -63,6 +69,14 @@
     headers= '{{headers}}'
     handle-as="json"
     last-response="{{quote}}">
+</iron-ajax>
+
+<iron-ajax auto id="historicalsjax"
+    url="https://api.robinhood.com/quotes/historicals/?bounds=trading&instruments=[[instrumenturl]]&interval=5minute&span=day"
+    headers= '{{headers}}'
+    method="GET"
+    handle-as="json"
+    last-response="{{historicals}}">
 </iron-ajax>
 
 
@@ -81,12 +95,14 @@
     </template>
   </div>
 
-  <div class="flex self-center">
-      <div class="layout horizontal end-justified" id="diffNum"></div>
+  <div class="flex self-center layout" style="position:relative">
+    <my-sparkline class="vertical layout center" height="18" width="60" datastring="[[histpoints]]"  change="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}"></my-sparkline>
+    <div id="diffNum" style="position:absolute; top:0; right:0; font-size:.9em"></div> 
+    <!-- <div class="layout horizontal end-justified" id="diffNum"></div> -->
   </div>
 
   <div id="priceWrap" class="self-center price_wrap">
-     <!-- Regular Hours -->
+      <!-- Regular Hours -->
       <template is="dom-if" if="{{!quote.last_extended_hours_trade_price}}">
         <div change$="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}">
           ${{_roundWithPad(quote.last_trade_price)}}
@@ -142,6 +158,19 @@
             observer: '_isChange'
           },
 
+          historicals: {
+            type: Object,
+            value: null,
+            observer: '_histToPoints',
+          },
+
+          histpoints:{
+            type: String,
+            value: '',
+            notify: false,
+            reflectToAttribute: true,
+          },
+
           symbol: {
             type: String,
             value: '',
@@ -162,6 +191,25 @@
       getHeaders() {
         return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
         };
+
+      _histToPoints(e) {
+
+        if (e == null) return;
+        
+
+        var hist = e.results[0].historicals;
+        var histstr = [];
+
+        for (let index = 0; index < hist.length; index++) {
+          const obj = hist[index];
+          
+          histstr.push(obj.open_price)
+
+        }
+
+        this.histpoints = histstr.toString();
+       
+      }  
 
       _handleResponse() {
 
@@ -186,10 +234,12 @@
 
       _updateData() {
         var vquote = this.$.quoteajax;
+        var vhist = this.$.historicalsjax;
 
         setInterval(function() {  
             if(!document.hidden){ 
-              vquote.generateRequest() 
+              vquote.generateRequest();
+              vhist.generateRequest();
             }
         }, 5000);
       }
@@ -206,6 +256,7 @@
       };
 
       _priceMovement(currentPrice, priceFrom){
+        if(currentPrice === undefined) return '';
         var change = (currentPrice - priceFrom);
         return (change >= 0) ? 'up': 'down';
       };
