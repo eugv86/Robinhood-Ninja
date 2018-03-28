@@ -12,6 +12,7 @@
 
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="simple-tracker.html">
+<link rel="import" href="my-mfa.html">
 
 <dom-module id="my-login">
   <template>
@@ -20,16 +21,21 @@
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
-        padding-bottom:30px;
+        /* padding-bottom:30px; */
         display: block;
 
         --paper-spinner-color: #30CD9A;
         --paper-spinner-stroke-width: 3px;
+        --paper-input-container-color: #30CD9A;
+        --paper-input-container-label:{
+          color:#747474;
+        };
         
-         animation: fadein 2s;
-        -moz-animation: fadein 2s; /* Firefox */
-        -webkit-animation: fadein 2s; /* Safari and Chrome */
-        -o-animation: fadein 2s; /* Opera */
+         animation: fadein 1s;
+        -moz-animation: fadein 1s; /* Firefox */
+        -webkit-animation: fadein 1s; /* Safari and Chrome */
+        -o-animation: fadein 1s; /* Opera */
+        /* opacity: 0.3; */
       }
 
       @keyframes fadein {from {opacity:0;} to {opacity: 1;}}
@@ -45,23 +51,40 @@
         top: 0;
         width: 100%;
         height: 100%;
-        background-image: url("../images/BG.png");
+        background-image: url("../images/bg_green_op.jpg");
         background-repeat: no-repeat;
-        opacity: 0.4;
-        background-position: bottom;
-        background-size: contain;
+        opacity: 1;
+        background-position: right;
+        background-size: cover;
       }
 
+
       h1{ margin:0px 30px; text-align: center }
+      .title{
+        font-size: 64px;
+        font-weight: 600;
+        line-height: 1;
+        margin-top: 50px;
+        letter-spacing: 3px;
+        text-shadow: 2px 2px 0px #00000005;
+      }
+
+      .title2{
+        font-size: 18px;
+        padding-left:3px;
+        letter-spacing: 3px;
+      }
 
       .login-box{
 
-        padding: 10px 30px;
+        padding: 0 60px;
         color: #757575;
-        border-radius: 5px;
+        /* border-radius: 5px; */
         background-color: #fff;
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        width:425px;
+        /* box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2); */
+        /* width: 25%;
+        max-width:250px; */
+
       }
 
       .box:after{
@@ -90,7 +113,10 @@
         margin:10px 0px 20px;
         background-color: #30CD9A;
         color: white;
+
       }
+      .btn_github{ background-color: white; color: #747474}
+
       .error{
 
         color: #F45531;
@@ -105,7 +131,18 @@
         right: 5px;
       }
 
-      @media only screen and (max-width: 768px)  { 
+      .landing_wrap{width:100%;/*max-width:1280px; padding:100px 100px 100px 100px;*/ position: relative;}
+      .landing_box {position: relative; background-color: rgba(48, 205, 155, 0.55); min-height:568px;}
+      .ui_img{width: 85%; margin: auto auto;display: block;margin-top:10px; margin-bottom: -100px; box-shadow: 0px 0px 12px 2px rgba(0,0,0,0.42); transition: all .5s;}
+      .ui_img:hover {margin-bottom: 0px}
+
+
+      @media only screen and (max-width:1366px)  { 
+        .landing_wrap {padding:0; max-width:100%}
+        .title{margin-top:20px; font-size: 50px;}
+      }
+
+      @media only screen and (max-width: 1023px)  { 
         :host {
           padding-top:0px;
           background-color: white;
@@ -113,8 +150,10 @@
           .login-box{
             box-shadow: none;
             width:85%;
+            max-width:100%;
             font-size: 13px
           }
+          .landing_wrap {padding:5%}
           .box:after{
             position:fixed;
           }
@@ -122,7 +161,7 @@
       }
     </style>
 
-    <iron-media-query query="(max-width: 1024px)" query-matches="{{mobile}}"></iron-media-query>
+    <iron-media-query query="(max-width: 1023px)" query-matches="{{mobile}}"></iron-media-query>
 
     <template is="dom-if" if="{{mobile}}">
       <div class="layout vertical self-center login-box box" style="padding:20px;">
@@ -150,39 +189,75 @@
     </template>
 
     <template is="dom-if" if="{{!mobile}}">
-      <div style="position:absolute; padding-bottom:390px;" class="self-center">
-          <div style="color:#30CD9A; font-size:48px;font-weight:600;text-align:center; opacity: 0.9;">Robinhood Ninja</div>
-          <div style="color:#ffff; font-size:20px;text-align:center">Track Your Robinhood Account in Your Desktop Browser.</div>
-          <div style="text-align:center;margin-top:10px;color:rgb(204, 204, 204)">
-            <div>Sign In with your Robinhood account</div>
-            <iron-icon class="self-center" style="width:50px;height:50px;" icon="expand-more"></iron-icon>
-          </div>
-      </div>
 
-      <div class="layout vertical self-center box login-box">
-        <div class="layout horizontal center-justified">
-            <div class="self-center">
-              <img style="height:120px;" src="../images/manifest/logo_green_ninja.svg"></img>
-            </div>
+      <div class="landing_wrap">
+        <div class="layout horizontal flex" style="height:100% ;box-shadow: 0px 0px 15px 2px rgba(0,0,0,0.12);min-height:568px;">
+          
+          <iron-pages id="ironPages"
+              selected="[[page]]"
+              attr-for-selected="name"
+              fallback-selection="view404"
+              role="main" style="height:100%; width: 410px;background-color:white; overflow:hidden"
+              class="layout vertical">
+
+              <div name="login" class="box login-box layout horizontal flex">
+                <div class="self-center ">
+    
+                    <div class="layout horizontal center-justified">
+                      <img style="height:140px;" src="../images/manifest/logo_green_ninja.svg"></img>
+                    </div>
+                    
+                    <!-- <div style="background-color:#30CD9A; width:3px; margin:0 30px;"></div> -->
+                    <div style="margin-top: 40px;font-weight: 500;font-size: 20px;">Sign in with your Robinhood account</div>
+                    <div class="layout vertical center-justified">
+                      <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login"></iron-a11y-keys>
+                      <paper-input label="Username" value="{{username}}" required autofocus></paper-input>
+                      <paper-input label="Password" value="{{password}}" required type="password"></paper-input>
+                      <paper-button class="btn_login" raised on-tap='login'>Login </paper-button>
+                    </div>
+                    <template is="dom-if" if="{{error}}">
+                      <div id="error" class="error layout self-centered">{{error}}</div>
+                  </template>
+                </div>
+    
+                <div class="spinner_box flex">
+                  <paper-spinner-lite id="spinner"></paper-spinner-lite>
+                </div>
+             
+              </div>
+
+            <my-mfa name="mfa" on-success="handleResponse" mfatype={{mfatype}} mfarequired={{mfarequired}} u={{username}} p={{password}} class="layout horizontal flex"></my-mfa>
+
+          </iron-pages>
+
+
+          <div class="layout vertical flex landing_box">
             
-            <div style="background-color:#30CD9A; width:3px; margin:0 30px;"></div>
-
-            <div class="layout vertical flex">
-              <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login"></iron-a11y-keys>
-              <paper-input label="Username" value="{{username}}" required ></paper-input>
-              <paper-input label="Password" value="{{password}}" required type="password"></paper-input>
-              <paper-button class="btn_login" raised on-tap='login'>Login </paper-button>
+            <div class="self-center">
+                <div class="title">Robinhood Ninja</div>
+                <div class="title2">Robinhood for Web (unofficial)</div>
             </div>
-        </div>
 
-        <div class="spinner_box flex">
-          <paper-spinner-lite id="spinner"></paper-spinner-lite>
+            <div class="flex"></div>
+
+            <div class="self-center">
+                <div style="text-align:center;letter-spacing: 3px;">GitHub - Open Source</div>
+                <a href="https://github.com/eugv86/Robinhood-Ninja" target="_blank" style="text-decoration:none;">
+                  <paper-button raised class="btn_github"><iron-icon src="https://assets-cdn.github.com/images/modules/logos_page/Octocat.png"></iron-icon>
+                    <div style="padding:0 20px;letter-spacing: 8px;">Robinhood-Ninja</div>
+                  </paper-button>
+                </a>
+            </div>
+
+            <div class="flex"></div>
+
+            <div class="self-center" style="overflow:hidden">
+                <img class="ui_img" src="../images/RobinhoodNinja_V1.jpg"></img>
+            </div>
+
+          </div>
         </div>
-        <template is="dom-if" if="{{error}}">
-            <div id="error" class="error layout self-centered">{{error}}</div>
-          </template>
       </div>
-      
     </template>
 
     <iron-ajax id="ajax"
@@ -203,6 +278,12 @@
       static get is() { return 'my-login'; }
       static get properties() {
         return {
+          page: {
+            type: String,
+            value: "login",
+            reflectToAttribute: true,
+            // observer: '_pageChanged',
+          },
           url: {
             type: String
           },
@@ -214,6 +295,14 @@
             type: String,
             value: ''
           },
+          mfarequired:{
+            type: Boolean,
+            value: false,
+          },
+          mfatype: {
+            type: String,
+            value: null,
+          },
           error: {
             type: String,
             value: ''
@@ -223,25 +312,30 @@
       ready() {
         
         super.ready();
-      }
+
+        /** GOOGLE ANALYTICS **/
+        this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.tracker.gaTrackPageView('index');
+        /** GOOGLE ANALYTICS **/
+    }
       login() {
        
         this.shadowRoot.querySelector('#spinner').active = true;
         this.$.ajax.generateRequest();
       };
 
+      _pageChanged(page) {
+        this.$.ironPages.select(page);
+      }
+
       _handleResponse(data) {
 
         if (data.detail.response.mfa_required)
         {
-          this.dispatchEvent(new CustomEvent('needmfa', { bubbles: true, composed: true, 
-            detail: { 
-                mfarequired: data.detail.response.mfa_required, 
-                mfatype: data.detail.response.mfa_type ,
-                username: this.username,
-                password: this.password,
-                } 
-            }));
+
+            this.mfarequired = data.detail.response.mfa_required;
+            this.mfatype =  data.detail.response.mfa_type
+            this.page = "mfa";
 
         }
         else {
