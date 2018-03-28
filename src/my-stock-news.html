@@ -72,7 +72,7 @@
 
     <h2 style="margin-top:0">RECENT NEWS: {{symbol}}</h2>
     <div class="scrollContainer">
-      <template is="dom-repeat" id="list" items="{{newsObject.results}}" as="n" rendered-item-count="{{renderedCount}}>
+      <template is="dom-repeat" id="list" items="{{newsObject.results}}" as="n" rendered-item-count="{{renderedCount}}">
         
         <div class="layout horizontal list-item">
           <a href="{{n.url}}" target="_blank" tabindex="-1" style="text-decoration:none; color:inherit;">
