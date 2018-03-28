@@ -1,0 +1,180 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<dom-module id="my-instrument-rating">
+  <template>
+    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles">
+      :host {
+        display: block;
+
+      }
+      .tooltip{
+        --paper-tooltip-background: white;
+        --paper-tooltip-text-color: black;
+        --paper-tooltip-opacity : .95;
+        width: 190px;
+        letter-spacing: .8px;
+        --paper-tooltip:{
+          font-size:12px;
+          text-align:center;
+          line-height:1.3;
+        }
+      }
+
+      .stat {
+          padding:2px;
+          line-height:1.5;
+          background-color:#9e9e9e;
+          /* border-radius:4px; */
+          color: white;
+        }
+    </style>
+
+    <iron-ajax id="ratingajax"
+        url="https://api.robinhood.com/midlands/ratings/[[instrumentid]]/"
+        headers= '{{headers}}'
+        handle-as="json"
+        last-response="{{rating}}">
+    </iron-ajax>
+
+    <iron-ajax id="popularityajax"
+        url="https://api.robinhood.com/instruments/[[instrumentid]]/popularity/"
+        headers= '{{headers}}'
+        handle-as="json"
+        last-response="{{popularity}}">
+    </iron-ajax>
+    
+      <div small class="horizontal layout end-justified">
+        <paper-button id="popularity" style="padding:0;margin:0;min-width: 10px;">
+          <iron-icon style="height:16px" icon="social:person"></iron-icon>
+          <div small style="padding-top:1px;">{{_numtolocal(popularity.num_open_positions)}}</div>
+        </paper-button>
+        <paper-tooltip class="tooltip" for="popularity" position="bottom" animation-delay="0" offset="5">{{_numtolocal(popularity.num_open_positions)}} people own {{simplename}} on Robinhood.</paper-tooltip>
+
+        <template is="dom-if" if="{{ratingavailable}}">
+          <span style="width:5px;"></span>
+          <paper-button id="rating" style="padding:0;margin:0;min-width: 10px;">
+            <iron-icon style="height:16px" icon="assessment"></iron-icon>
+            <div small style="padding-top:1px;">{{ratingpercent}}% {{ratingtype}}</div>            
+          </paper-button>
+          <paper-tooltip class="tooltip" for="rating" position="bottom" animation-delay="0" offset="5">
+            <div class="layout vertical flex">
+              <div>{{ratingpercent}}% of analysts agree that {{simplename}} is a {{ratingtype}}.</div>
+              <div class="layout horizontal" style="margin-top:8px;">
+                <div class="flex stat" style="background-color:#30CD9A">{{rating.summary.num_buy_ratings}} buy</div>
+                <div class="flex stat">{{rating.summary.num_hold_ratings}} hold</div>
+                <div class="flex stat" style="background-color:#F45531">{{rating.summary.num_sell_ratings}} sell</div>
+              </div>
+            </div>
+          </paper-tooltip>
+        </template>
+      </div>
+
+  </template>
+
+  <script>
+    class MyInstrumentRating extends Polymer.Element {
+      static get is() { return 'my-instrument-rating'; }
+      static get properties() {
+        return {
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+          simplename: String,
+          rootPath: String,
+          instrumentid: {
+            type: String,
+            observer: '_instrumentidCheck',
+          },
+          ratingpercent: String,
+          ratingtype: String,
+          ratingavailable: {
+            type: Boolean,
+            value: false,
+          },
+          rating: {
+            type: Object,
+            value: null,
+            observer: '_calcRatingPercent',
+          },
+
+          popularity: {
+            type: Object
+          },
+        };
+      }
+      ready() {
+        super.ready();
+       
+       
+      };
+
+      _instrumentidCheck(e){
+        
+        if (e == '') return;
+        this.$.ratingajax.generateRequest();
+        this.$.popularityajax.generateRequest();
+
+      }
+      _calcRatingPercent(e){
+
+        if (e == null){
+          this.ratingpercent =  '';
+          this.ratingtype = '';
+          this.ratingavailable = false;
+          return;
+        }
+
+        var total = parseFloat(e.summary.num_buy_ratings) + parseFloat(e.summary.num_sell_ratings) + parseFloat(e.summary.num_hold_ratings);
+
+        var buyRating = parseFloat(e.summary.num_buy_ratings)/ total;
+        var sellRating = parseFloat(e.summary.num_sell_ratings)/ total;
+        var holdRating = parseFloat(e.summary.num_hold_ratings)/ total;
+
+        var maxRating = Math.max(buyRating, sellRating, holdRating);
+
+        switch (maxRating) {
+          case buyRating:
+            this.ratingpercent = (buyRating *100).toFixed(0)
+            this.ratingtype = 'BUY'
+            break;
+          
+          case sellRating:
+            this.ratingpercent =  (sellRating *100).toFixed(0)
+            this.ratingtype = 'SELL'
+          break;
+
+          case holdRating:
+            this.ratingpercent =  (holdRating *100).toFixed(0)
+            this.ratingtype = 'HOLD'
+          break;
+        }
+
+        this.ratingavailable = true;
+      };
+
+      _numtolocal(num){
+        if (num == null) return;
+        return num.toLocaleString();
+      }
+     
+      getHeaders() {
+        return{"Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+      };
+
+    }
+
+    window.customElements.define(MyInstrumentRating.is, MyInstrumentRating);
+  </script>
+</dom-module>
