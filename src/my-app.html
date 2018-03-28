@@ -20,6 +20,7 @@
 <link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 
+
 <link rel="lazy-import" href="my-portfolio.html">
 <link rel="lazy-import" href="my-mfa.html">
 <link rel="lazy-import" href="my-history.html">
@@ -28,6 +29,7 @@
 <link rel="import" href="my-help.html">
 <link rel="import" href="my-ticker-2.html">
 <link rel="import" href="simple-tracker.html">
+
 
 <script src="../bower_components/moment/moment.js"></script>
 
@@ -170,14 +172,13 @@
             fallback-selection="view404"
             role="main" style="height:100%"
             class="flex layout vertical">
-            
+
           <my-login name="login" 
-                    url="https://api.robinhood.com/api-token-auth/" 
-                    on-success="handleResponse"
-                    on-needmfa="needmfa"
-                    class="flex layout horizontal around-justified">
+              url="https://api.robinhood.com/api-token-auth/" 
+              on-success="handleResponse"
+              on-needmfa="needmfa"
+              class="flex layout horizontal around-justified">
           </my-login>
-          <my-mfa name="mfa" on-success="handleResponse" mfatype={{mfatype}} mfarequired={{mfarequired}} u={{u}} p={{p}} class="flex layout horizontal around-justified"></my-mfa>
           <my-portfolio name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
           <my-account name="account" token={{token}}></my-account>
           <my-history id="histview" st name="history" username={{user.username}} token={{token}} style="height:100%"></my-history>
@@ -236,16 +237,6 @@
             type: String,
             computed: '_cookieExpireDate()'
           },
-          mfarequired:{
-            type: Boolean,
-            value: false,
-          },
-          mfatype: {
-            type: String,
-            value: null,
-          },
-          u: String,
-          p: String,
         };
       }
 
@@ -311,22 +302,16 @@
       }
 
       handleResponse(e) {    
+ 
         this.token = e.detail.token
         this.page = 'portfolio';
       }
       
-      needmfa(e){
-        this.mfarequired = e.detail.mfarequired;
-        this.mfatype = e.detail.mfatype;
-        this.u = e.detail.username;
-        this.p = e.detail.password;
-        this.page = 'mfa';
-      }
-
       handleError(e) {
         alert(e.detail.error);
       }
     }
+
     window.customElements.define(MyApp.is, MyApp);
   </script>
 </dom-module>
