@@ -16,6 +16,8 @@
 <link rel="import" href="simple-tracker.html">
 <link rel="import" href="my-stock-news.html">
 <link rel="import" href="my-stock-order.html">
+<link rel="import" href="my-instrument-rating.html">
+
 
 <script src="../bower_components/moment/moment.js"></script>
 <script src="../bower_components/chart.js/dist/Chart.min.js"></script>
@@ -23,7 +25,7 @@
 <dom-module id="my-instrument-detail">
   <template>
 
-    <simple-tracker id="googleanalytics"></simple-tracker>
+    <simple-tracker id="tracker"></simple-tracker>
 
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
@@ -132,8 +134,10 @@
       <!--  -->
 
       <div class="vertical layout self-end">
+        
           <div medium class="horizontal layout end-justified">{{quote.symbol}}</div>
-          <div secondary>{{instrument.name}}</div>
+          <div secondary class="horizontal layout end-justified">{{instrument.name}}</div>
+          <my-instrument-rating instrumentid={{instrument.id}} simplename={{_checksimplename(instrument.simple_name)}}></my-instrument-rating>
           <!-- <div style="width:200px; text-overflow: ellipsis;white-space: nowrap;overflow: hidden; text-align:right">{{instrument.name}}</div> -->
       </div>
     </div>
@@ -421,10 +425,10 @@
       _symbolLoaded(val) {
         if (val == '') return
 
-        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
-        this.$.googleanalytics.gaTrackPageView('StockDetail/' + this.symbol);
-        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Stock-Click', 'Stock', this.symbol)
+        this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+        this.$.tracker.gaSetUserId(SHA256(this.username));
+        this.$.tracker.gaTrackPageView('StockDetail/' + this.symbol);
+        this.$.tracker.gaTrackEvent('App-Actions', 'Stock-Click', 'Stock', this.symbol)
 
         this.$.objecFrame.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/my-Interactive-chart.html?alt=media&symbol=" + this.symbol
         this.$.objecFrameTwits.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/stock-twits.html?alt=media&token=fdd87234-181f-402c-a6d3-07b505f794db&symbol=" + this.symbol
@@ -453,6 +457,12 @@
         
       };
 
+      _checksimplename(e) {  
+        if (this.instrument == null) return;
+
+        return (e == null)? this.instrument.name: this.instrument.simple_name
+
+      }
 
       _onResize(e) {
         if(this.chart == null) return;
