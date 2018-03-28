@@ -31,7 +31,7 @@ Second, install [Bower](https://bower.io/) using [npm](https://www.npmjs.com)
 Third, install dependencies
 
     bower install bower.json
-
+**** If you get a message "Unable to find a suitable version..." select the options that are required by Robinhood Ninja  ****
 
 ### Start the development server
 
