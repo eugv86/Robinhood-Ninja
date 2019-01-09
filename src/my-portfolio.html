@@ -414,7 +414,7 @@
  
 
       getHeaders() {
-        return{'Authorization': 'Token ' +  this.token , "Accept": "*/*", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        return{'Authorization': 'Bearer ' +  this.token , "Accept": "*/*", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
         };
 
       _updateData() {
