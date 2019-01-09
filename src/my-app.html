@@ -174,7 +174,7 @@
             class="flex layout vertical">
 
           <my-login name="login" 
-              url="https://api.robinhood.com/api-token-auth/" 
+              url="https://api.robinhood.com/oauth2/token/" 
               on-success="handleResponse"
               on-needmfa="needmfa"
               class="flex layout horizontal around-justified">
@@ -269,7 +269,7 @@
       }
 
       getHeaders(val) {
-        return{'Authorization': 'Token ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        return{'Authorization': 'Bearer ' +  this.token , "Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
       };
 
 
