@@ -101,8 +101,8 @@
     
 
     <iron-ajax id="ajax"
-        url="https://api.robinhood.com/api-token-auth/"
-        body='{"username": "{{u}}","password": "{{p}}","mfa_code": "{{mfacode}}"}'
+        url="https://api.robinhood.com/oauth2/token/"
+        body='{"username": "{{u}}","password": "{{p}}","mfa_code": "{{mfacode}}","client_id": "{{client_id}}","grant_type": "{{grant_type}}","scope": "{{scope}}"}'
         headers='{"Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}'
         method="POST"
         handle-as="json"
@@ -126,6 +126,18 @@
           mfarequired:{
             type: Boolean,
             value: false,
+          },
+          client_id: {
+            type: String,
+            value: 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
+          },
+          grant_type: {
+            type: String,
+            value: 'password'
+          },
+          scope: {
+            type: String,
+            value: 'internal'
           },
           mfacode: String,
           u:  String,
@@ -191,7 +203,7 @@
           this.$.tracker.gaTrackEvent('App-Actions', 'MFA Sign-In Success')
           /** GOOGLE ANALYTICS **/
 
-          this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.token } }));
+          this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.access_token } }));
 
       };
 
