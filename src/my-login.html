@@ -11,12 +11,11 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="simple-tracker.html">
 <link rel="import" href="my-mfa.html">
+
 
 <dom-module id="my-login">
   <template>
-    <simple-tracker style="position:absolute" id="tracker"></simple-tracker>
 
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
@@ -88,7 +87,7 @@
       }
 
       .box:after{
-          content: "beta";
+          content: "v2.beta";
           position: absolute;
           width: 98px;
           height: 30px;
@@ -96,9 +95,9 @@
           top: 9.3px;
           left: -24.6px;
           text-align: center;
-          font-size: 14px;
+          font-size: 11px;
           letter-spacing: 1px;
-          text-transform: uppercase;
+          /* text-transform: uppercase; */
           font-weight: bold;
           color: #fff;
           line-height: 32px;
@@ -133,7 +132,7 @@
 
       .landing_wrap{width:100%;/*max-width:1280px; padding:100px 100px 100px 100px;*/ position: relative;}
       .landing_box {position: relative; background-color: rgba(48, 205, 155, 0.55); min-height:568px;}
-      .ui_img{width: 85%; margin: auto auto;display: block;margin-top:10px; margin-bottom: -100px; box-shadow: 0px 0px 12px 2px rgba(0,0,0,0.42); transition: all .5s;}
+      .ui_img{width: 85%; margin: auto auto;display: block;margin-top:10px; margin-bottom: -85px; box-shadow: 0px 0px 12px 2px rgba(0,0,0,0.42); transition: all .5s;}
       .ui_img:hover {margin-bottom: 0px}
 
 
@@ -191,8 +190,7 @@
     <template is="dom-if" if="{{!mobile}}">
 
       <div class="landing_wrap">
-        <div class="layout horizontal flex" style="height:100% ;box-shadow: 0px 0px 15px 2px rgba(0,0,0,0.12);min-height:568px;">
-          
+        <div class="layout horizontal flex" style="height:100% ;box-shadow: 0px 0px 15px 2px rgba(0,0,0,0.12);min-height:568px;">  
           <iron-pages id="ironPages"
               selected="[[page]]"
               attr-for-selected="name"
@@ -207,7 +205,6 @@
                       <img style="height:140px;" src="../images/manifest/logo_green_ninja.svg"></img>
                     </div>
                     
-                    <!-- <div style="background-color:#30CD9A; width:3px; margin:0 30px;"></div> -->
                     <div style="margin-top: 40px;font-weight: 500;font-size: 20px;">Sign in with your Robinhood account</div>
                     <div class="layout vertical center-justified">
                       <iron-a11y-keys id="a11y" keys="enter" on-keys-pressed="login"></iron-a11y-keys>
@@ -252,7 +249,7 @@
             <div class="flex"></div>
 
             <div class="self-center" style="overflow:hidden">
-                <img class="ui_img" src="../images/RobinhoodNinja_V1.jpg"></img>
+                <img class="ui_img" src="../images/RH_V2.svg"></img>
             </div>
 
           </div>
@@ -324,11 +321,6 @@
       ready() {
         
         super.ready();
-
-        /** GOOGLE ANALYTICS **/
-        this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.tracker.gaTrackPageView('index');
-        /** GOOGLE ANALYTICS **/
     }
       login() {
        
@@ -352,7 +344,7 @@
         }
         else {
           /** GOOGLE ANALYTICS **/
-          this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
+          this.$.tracker.gaCreate('UA-108478575-1');
           this.$.tracker.gaSetUserId(SHA256(this.username));
           this.$.tracker.gaTrackPageView('Login');
           this.$.tracker.gaTrackEvent('App-Actions', 'Sign-In Success')

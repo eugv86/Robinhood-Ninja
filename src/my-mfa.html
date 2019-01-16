@@ -11,10 +11,9 @@
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
 
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="simple-tracker.html">
+
 <dom-module id="my-mfa">
   <template>
-    <simple-tracker style="position:absolute" id="tracker"></simple-tracker>
 
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
@@ -34,15 +33,9 @@
       @keyframes animateright{from{right:-300px;opacity:0} to{right:0;opacity:1}}
 
       .login-box{
-
         padding: 60px;
         color: #757575;
-        /* border-radius: 5px; */
-
-        /* box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2); */
-
-
-        }
+      }
       
       .btn_login{
         margin:10px 0 20px 0;
@@ -193,18 +186,7 @@
 
 
       _handleResponse(data) {
-
-
-
-          /** GOOGLE ANALYTICS **/
-          this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-          this.$.tracker.gaSetUserId(SHA256(this.u));
-          this.$.tracker.gaTrackPageView('MFA Login');
-          this.$.tracker.gaTrackEvent('App-Actions', 'MFA Sign-In Success')
-          /** GOOGLE ANALYTICS **/
-
           this.dispatchEvent(new CustomEvent('success', { bubbles: true, composed: true, detail: { token: data.detail.response.access_token } }));
-
       };
 
       _handleError(error) {

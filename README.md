@@ -5,7 +5,7 @@ A front-end web app built using [Polymer 2.0](https://www.polymer-project.org) c
 
 Unofficial Robinhood API documentation: https://github.com/sanko/Robinhood 
 
-![screenshot](https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/RH.svg?alt=media&token=514cac95-3857-47cb-a202-5ad4db954d62)
+![screenshot](https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/RH_V2.svg?alt=media&token=95493c1e-730c-4f13-96fa-6a41c704b715)
 
 ### Live App;
 https://robinhoodninja.com

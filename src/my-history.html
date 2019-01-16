@@ -7,12 +7,12 @@
 
 <link rel="import" href="my-history-item.html">
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="simple-tracker.html">
+
 
 
 <dom-module id="my-history">
   <template>
-    <simple-tracker id="googleanalytics"></simple-tracker>
+
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
@@ -77,10 +77,6 @@
       }
       ready() {
         super.ready();
-
-        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.googleanalytics.gaSetUserId(SHA256(this.username));
-        this.$.googleanalytics.gaTrackPageView('History');
       };
 
       _reset() {

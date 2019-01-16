@@ -90,11 +90,12 @@
             </paper-button>
           </a>
         </div>
+     
       </template>
       <template is="dom-if" if="{{!renderedCount}}">
        <h1 style="font-size:70px; text-align:center">¯\_(ツ)_/¯</h1>
        <h3 style="text-align:center">no news is good news</h3>
-      </template>
+      </template> 
     </div>
   </template>
 
@@ -124,6 +125,7 @@
             value: null,
           },
           renderedCount: Number,
+
           months: {
             type: Array,
             value : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]

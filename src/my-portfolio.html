@@ -6,6 +6,7 @@
 <link rel="import" href="../bower_components/iron-list/iron-list.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../bower_components/polymer/lib/utils/async.html">
 
 <link rel="import" href="my-instrument.html">
@@ -17,13 +18,28 @@
 
 <dom-module id="my-portfolio">
   <template>
-
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
         display: block;
         padding: 0;
         overflow:hidden;
+        background-color: #121921;
+        
+        --paper-tab-content:{
+          height: auto;
+          background-color:#363C45;
+          color:#30CD9A;
+          padding:5px;
+          font-size: 13px;
+          border-radius: 25px;
+          /* margin-right:10px; */
+          text-transform: none;
+        };
+        --paper-tab-content-unselected:{
+          color:#FEFEFE;
+        }
+
       }
       .value_card> div[title] {
         font-size: 22px;
@@ -34,9 +50,10 @@
         color: #fff 
       }
       .stock_list_wrap {
-        min-width: 325px;
+        min-width: 300px;
         overflow: auto;
         height: 100%;
+        background-color: #1C2229
       }
       .stock_list_wrap:hover::-webkit-scrollbar-thumb{
         background-color: #30CD9A;
@@ -44,7 +61,24 @@
       .stock_list_wrap:hover::-moz-scrollbar-thumb{
         background-color: #30CD9A;
       }
+      #updateToast{
+
+        --paper-toast-background-color: #F45531;
+        --paper-toast-color: white;
+          left:85px!important;
+          min-width: 280px!important;
+          padding: 0px 20px!important;
+      }
+
+
     </style>
+   
+      <!-- New app update notification -->
+      <paper-toast id="updateToast" class="layout horizontal center" duration="0" text="Site update available!">
+        <div class="flex"></div>
+        <paper-button onclick="window.location.reload(true)">Update</paper-button>
+      </paper-toast>
+
 
     <iron-ajax auto id="accountajax"
         url="https://api.robinhood.com/accounts/"
@@ -108,7 +142,7 @@
       </template>
 
       <iron-pages id="portfolioPages" class="flex layout vertical" selected="[[symbol]]" attr-for-selected="symbol" fallback-selection="">
-
+        
         <!-- Portfolio Overview Info Page  -->
         <div class="flex layout vertical" symbol="" style="padding: 20px 50px;">
 
@@ -144,7 +178,7 @@
           </div>
 
           <!-- Border -->
-          <div style="width:100%; height:1px; background-color:#363F43;margin: 20px 0;"></div>
+          <div style="width:100%; height:1px; background-color:#1C2229;margin: 20px 0;"></div>
 
           <!-- Chart for portfolio value -->
           <div class="flex">
@@ -153,13 +187,11 @@
 
           <div>
             <div class="layout center-justified horizontal ">
-              <paper-tabs id="chartAccountSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:390px" >
+              <paper-tabs id="chartAccountSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:390px"  noink no-bar no-slide>
                 <paper-tab q="span=day&interval=5minute&bounds=trading">1D</paper-tab>
                 <paper-tab q="span=week&interval=10minute&bounds=regular">1W</paper-tab>
-                <!-- <paper-tab q="day">1M</paper-tab> -->
                 <paper-tab q="span=year&interval=day&bounds=regular">1Y</paper-tab>
                 <paper-tab q="span=5year&interval=week&bounds=regular">5Y</paper-tab>
-                <!-- <paper-tab q="span=all&bounds=regular">ALL</paper-tab> -->
               </paper-tabs>
             </div>
           </div>
@@ -169,25 +201,23 @@
         </div>
 
         <!-- Stock Selected Detail Page -->
-        <my-instrument-detail id='instDetail' class="flex layout vertical" buyingpower={{buyingPower}} selecteditem={{selecteditem}} username={{user.username}} token={{token}} symbol="{{symbol}}" accounturl={{account.results.0.url}}></my-instrument-detail>
+        <my-instrument-detail id='instDetail' class="flex layout vertical" isfollowing=[[isfollowing]] selecteditem={{selecteditem}} buyingpower={{buyingPower}} username={{user.username}} token={{token}} symbol="{{symbol}}" accounturl={{account.results.0.url}}  positionobject={{selectedposition}} ></my-instrument-detail>
 
       </iron-pages>
 
     </div>
 
     <!-- Border -->
-    <div style="width:10px; background-color:#1A1E24;margin: 0 0px"></div>
+    <div style="width:10px; background-color:#1C2229;margin: 0 0px"></div>
 
 
     <!-- My Stock List -->
     <div class="stock_list_wrap" > 
-      <iron-selector selected="{{symbol}}" attr-for-selected="symbol" selected-item="{{selecteditem}}" >
+      <iron-selector id="symbolSelector" selected="{{symbol}}" attr-for-selected="symbol" selected-item="{{selecteditem}}" >
         <!-- POSITIONS -->
         <div style="padding:15px 15px 5px; color: #30CD9A">Positions</div>
         <template is="dom-repeat" id="list" items="{{positions.results}}" as="position" scroll-target="document" initial-count="8">
-            <my-instrument instrumenturl={{position.instrument}}  token={{token}} qty$={{position.quantity}} quantity={{position.quantity}} style="cursor: pointer;"></my-instrument>
-              <!-- Border -->
-              <!-- <div style="width:100; height:1px; background-color:#363F43;margin: 0px;"></div> -->
+          <my-instrument data-positionobject$={{position}} instrumenturl={{position.instrument}}  token={{token}} qty$={{position.quantity}} quantity={{position.quantity}} style="cursor: pointer;"></my-instrument>
         </template>
         <!-- WATCHLIST -->
         <div style="padding:15px 15px 5px;color: #30CD9A">Watchlist</div>
@@ -196,8 +226,6 @@
           <template is="dom-if" if="{{!_isMaxListItems(30, index)}}">  
             <my-instrument instrumenturl={{watchlist.instrument}} token={{token}} style="cursor: pointer;"></my-instrument>
           </template>
-            <!-- Border -->
-            <!-- <div style="width:100; height:1px; background-color:#363F43;margin: 0px;"></div> -->
         </template>
         
       </iron-selector>
@@ -314,7 +342,23 @@
 
           selecteditem: {
             type: Object,
-          }        
+          },
+
+          selectedposition: {
+            type: Object,
+          },
+
+          isfollowing:{
+            type: Boolean,
+            value: false,
+            notify: true,
+           
+          },    
+          update: {
+            type: Boolean,
+            value: false,
+            observer: 'updateapp',
+          }      
 
         };
       }
@@ -324,6 +368,16 @@
       
         window.addEventListener("resize",  e =>  this._onResize(e));
         this._updateData();
+      };
+
+      updateapp(){
+        if(this.update == true){
+          var ut = this.$.updateToast;
+          setTimeout(function(){ 
+            ut.show();
+          }, 3000);
+        }
+        
       };
       
       _accountLoaded(obj){
@@ -336,15 +390,14 @@
         var a = this.account.results[0];
        
         if (a.type == 'margin') {
-          this.buyingPower = (parseFloat(a.margin_balances.margin_limit) + parseFloat(a.margin_balances.cash)).toFixed(2)
+          //this.buyingPower = (parseFloat(a.margin_balances.margin_limit) + parseFloat(a.margin_balances.cash)).toFixed(2)
+          this.buyingPower = (a.margin_balances.overnight_ratio === 0 ? a.margin_balances.overnight_ratio : (a.margin_balances.overnight_buying_power / a.margin_balances.overnight_ratio)).toFixed(2)
         }
         else {
            this.buyingPower = a.cash.toFixed(2);
         };
-      }
-
-      _calcBuyingPower(margin, cash) {
-        return this._roundWithPad(parseInt(margin) + parseInt(cash))
+        
+        // this.buyingPower =  (parseFloat(a.buying_power) + ((a.sma == '')? 0:parseFloat(a.sma))).toFixed(2)
       }
 
       _calcCash(margin, buyingpower) {
@@ -399,7 +452,6 @@
 
       isPosition(item) {
        //filter watchlist items that are also positions
-       //item.instrument == this.positions.in
        if (this.positions == null) return;
        return item.instrument != this.search(item.instrument, this.positions.results)
       };
@@ -412,7 +464,6 @@
           }
       }
  
-
       getHeaders() {
         return{'Authorization': 'Bearer ' +  this.token , "Accept": "*/*", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
         };
@@ -435,20 +486,30 @@
       };
 
       _symbolChange() {
-        
+  
         if (this.symbol == '') { 
           var pages = this.$.portfolioPages;
           pages.select = '';
 
         }
         else {
+          
+          if (this.selecteditem) {
 
-          //this.$.instDetail.setAttribute('selectedItem', this.selectedItem)
+            this.isfollowing = true;
+            if (typeof(this.selecteditem.dataset.positionobject) != 'undefined'){
+              this.selectedposition = JSON.parse(this.selecteditem.dataset.positionobject)
+            }
+          }else {this.isfollowing = false; } 
+
           // Load page import on demand. Show 404 page if fails
           var resolvedPageUrl = this.resolveUrl('my-instrument-detail.html');
 
-          //href: string, onload: Function, onerror: Function, optAsync: boolean
           Polymer.importHref(resolvedPageUrl, null, null, true);
+
+          //reset
+          this.selectedItem = {}
+          this.$.symbolSelector.selectedValues = []
         }
       }
 
@@ -492,6 +553,7 @@
               
               this.accountchart.update();
             }
+
         }
       }
 
@@ -536,7 +598,7 @@
                 datasets: [
                     {
                         data: prices,
-                        fill: true,
+                        fill: false,
                         lineTension: 0.2,
                         pointRadius: 0,
                         borderWidth: 2.5,
@@ -549,6 +611,9 @@
                 ],
             },
             options: {
+                animation: {duration: 1800,},
+                hover: {animationDuration: 0,},
+                responsiveAnimationDuration: 0,
                 responsive: true,
                 maintainAspectRatio: false,
                 hover: { mode: 'index',intersect: false},
@@ -560,7 +625,7 @@
                     }],
                     xAxes: [{
                         ticks: {fontColor: '#a9aebd', fontSize: '13', display: false,},
-                        gridLines: {display: false,}
+                        gridLines: {display: false,drawBorder: false, }
                     }]
                 },
                 tooltips: {

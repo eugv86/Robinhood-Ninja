@@ -34,7 +34,7 @@
           padding:5px 8px;
           /* width:80px; */
           text-align:right;
-          font-size: 18px;
+          font-size: 16px;
 
       }
       .price_wrap>div[change=up] {
@@ -86,7 +86,7 @@
     
   <div class="vertical layout">
      
-    <div>{{instrument.symbol}}</div>
+    <div small>{{instrument.symbol}}</div>
     <template is="dom-if" if="{{quantity}}">
       <div secondary>{{_round(quantity)}} SHARES</div>
     </template>
