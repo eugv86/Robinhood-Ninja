@@ -207,6 +207,11 @@
             type: Object,
             computed: 'getHeaders()'
           },
+          isfollowing:{
+            type: Boolean,
+            value: false,
+           
+          }, 
         };
       }
 
@@ -333,13 +338,15 @@
 
       _getSharesQty(val){
 
+        if (this.isfollowing  == false) {return}
+
         if ((typeof val) == 'object') { 
           if (val == null) { this.credit = (0).toFixed(2)} else {
             this.credit = parseFloat(val.getAttribute('qty')).toFixed(0) + ' available';
           }
         }
         else if ((typeof val) == 'string'){
-            if (val == "") {  this.credit = parseFloat(this.selecteditem.getAttribute('qty')).toFixed(0) + ' available';} else{
+            if (val != "") {  this.credit = parseFloat(this.selecteditem.getAttribute('qty')).toFixed(0) + ' available';} else{
                 this.credit = '$' + this._estimateCredit()
             }
         }

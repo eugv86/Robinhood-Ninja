@@ -13,7 +13,6 @@
 
 
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="simple-tracker.html">
 <link rel="import" href="my-stock-news.html">
 <link rel="import" href="my-stock-order.html">
 <link rel="import" href="my-instrument-rating.html">
@@ -25,45 +24,71 @@
 <dom-module id="my-instrument-detail">
   <template>
 
-    <simple-tracker id="tracker"></simple-tracker>
-
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
         display: block;
         padding: 20px 50px;
         --paper-dialog-background-color:rgba(0, 0, 0, 0.6);
-      }
-
-      .fundimental_box {
-        max-width: 200px
+        --paper-tab-content:{
+          height: auto;
+          background-color:#363C45;
+          color:#30CD9A;
+          padding:5px;
+          font-size: 13px;
+          border-radius: 25px;
+          /* margin-right:10px; */
+          text-transform: none;
+        };
+        --paper-tab-content-unselected:{
+          color:#FEFEFE;
+        }
       }
 
       h3 {
         margin-top:0px
       }
-
+      div[show=true]{
+        display: block;
+      }
+      div[show=false]{
+       display: none;
+      }
       .border1 {
         width: 100%;
         height: 1px;
-        background-color: #363F43;
+        /* background-color: #363F43; */
         margin: 15px 0 15px;
       }
 
       .border2 {
-        width:100%; height:1px; background-color:#363F43; margin: 20px 0 15px;
+        width:100%; height:1px;
+         background-color:#363F43;
+         margin: 30px 0 15px;
       }
 
       .menu-button{
-        /* background-color:#30CD9A; */
-        color:white;
-        padding:10px 2px;
-        font-size: 14px;
+        background-color:#363C45;
+        color:#FEFEFE;
+        padding:6px 10px;
+        font-size: 13px;
         line-height: .8;
         min-width: 30px;
-        border-bottom: 2px solid white;
-        border-radius: 0;
+        /* border-bottom: 2px solid white; */
+        border-radius: 25px;
         margin-right:10px;
+        text-transform: none;
+      }
+
+      .ic_style{
+        background-color:#363C45;
+        color:#FEFEFE;
+        font-size: 13px;
+        border-radius: 25px;
+        text-transform: none;
+        height:29px;
+        margin-left:10px;
+        min-width:60px;
       }
 
       paper-button[isenabled=false] {
@@ -71,6 +96,10 @@
         cursor: not-allowed;
         pointer-events: none;
       }
+      #positionWrap[show=false]{display: none;}
+      #buySellButtons[show=false]{  display: none;}
+      #sellButton[show=false]{  display: none;}
+      #addToWatchListButton[show=false]{  display: none;}
 
     </style>
 
@@ -104,21 +133,29 @@
         last-response="{{historicals}}">
     </iron-ajax>
 
+    <iron-ajax id="addtowatchlistajax"
+        url="[[watchlistaddurl]]"
+        headers= '{{headers}}'
+        method="post"
+        handle-as="json"
+        last-response="{{historicals}}">
+    </iron-ajax>
+
 
 <div class="flex layout vertical">
     <div class="layout horizontal">
-      <div class="">
-          <div class="horizontal start-justified layout">
-            <div>
+      <div class="horizontal layout">
+          <div class="horizontal layout">
+            <div class="flex vertical layout">
               <!-- Regular Hours -->
               <template is="dom-if" if="{{!quote.last_extended_hours_trade_price}}">
-                <div large>${{_round(quote.last_trade_price)}}</div>
+                <div class="flex" large>${{_round(quote.last_trade_price)}}</div>
                 <div small change$="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}">{{_calcChange(quote.last_trade_price, quote.previous_close)}} Today</div>
               </template>
 
-              <!-- After Hours -->
+              <!-- After Hours --> 
               <template is="dom-if" if="{{quote.last_extended_hours_trade_price}}">
-                <div large>${{_round(quote.last_extended_hours_trade_price)}}</div>
+                <div class="flex" large>${{_round(quote.last_extended_hours_trade_price)}}</div>
                 <div small change$="{{_priceMovement(quote.last_trade_price, quote.previous_close)}}">{{_calcChange(quote.last_trade_price, quote.previous_close)}} Today</div>
                 <div small >{{_calcChange(quote.last_extended_hours_trade_price, quote.last_trade_price)}} After Hours</div>
               </template>
@@ -136,9 +173,8 @@
       <div class="vertical layout self-end">
         
           <div medium class="horizontal layout end-justified">{{quote.symbol}}</div>
-          <div secondary class="horizontal layout end-justified">{{instrument.name}}</div>
+          <div small secondary class="horizontal layout end-justified">{{instrument.name}}</div>
           <my-instrument-rating instrumentid={{instrument.id}} simplename={{_checksimplename(instrument.simple_name)}}></my-instrument-rating>
-          <!-- <div style="width:200px; text-overflow: ellipsis;white-space: nowrap;overflow: hidden; text-align:right">{{instrument.name}}</div> -->
       </div>
     </div>
 
@@ -151,68 +187,107 @@
     </div>
 
     <div class="layout center-justified horizontal ">
-      <paper-tabs id="chartSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:390px" >
+      <paper-tabs id="chartSpanTabs" selected="{{chartOptSelected}}" attr-for-selected="q" style="width:340px;height:29px" noink no-bar no-slide>
         <paper-tab q="span=day&interval=5minute&bounds=trading">1D</paper-tab>
         <paper-tab q="span=week&interval=10minute&bounds=regular">1W</paper-tab>
-        <!-- <paper-tab q="day">1M</paper-tab> -->
         <paper-tab q="span=year&interval=day&bounds=regular">1Y</paper-tab>
         <paper-tab q="span=5year&interval=week&bounds=regular">5Y</paper-tab>
-        <!-- <paper-tab q="span=all&bounds=regular">ALL</paper-tab>-->
       </paper-tabs>
-      <paper-button style="font-size:14px;" on-tap='_openDialog' title="Interactive Chart" data-id="interactiveChartDialog">Interactive Chart</paper-fab>
+      <paper-button class="ic_style" on-tap='_openDialog' title="Interactive Chart" data-id="interactiveChartDialog">IC</paper-button>
     </div>
     <!-- Border -->
     <div class="border2"></div>
 
+   
+    <!-- position stats-->
+      <div class="layout horizontal">
+   
+        <div id='positionWrap' show="false" class="layout horizontal">
+          <div class="layout vertical ">
+            <div class="layout vertical">
+              <div secondary small>Your Equity</div>
+              <template is="dom-if" if="{{!quote.last_extended_hours_trade_price}}"><div>{{_calcEquity(positionobject.quantity, quote.last_trade_price)}}</div></template>
+              <template is="dom-if" if="{{quote.last_extended_hours_trade_price}}"><div>{{_calcEquity(positionobject.quantity, quote.last_extended_hours_trade_price)}}</div></template>
+            </div>
+            <div style="height:10px;"></div>
+            <div class="layout vertical">
+              <div secondary small>Average Per Share</div>
+              <div>{{_round(positionobject.average_buy_price)}}</div>
+            </div>
+          </div>
+
+          <div class="flex" style="max-width:40px; min-width:40px;"></div>
+
+          <div class="layout vertical">
+            <div class="layout vertical">
+              <div secondary small>Total Cost</div>
+              <div>{{_calcCost(positionobject.quantity, positionobject.average_buy_price)}}</div>
+            </div>
+            <div style="height:10px;"></div>
+            <div class="layout vertical">
+              <div secondary small>Total Return</div>
+              <template is="dom-if" if="{{!quote.last_extended_hours_trade_price}}"><div>{{_calcReturn(quote.last_trade_price, positionobject.quantity, positionobject.average_buy_price)}}</div></template>
+              <template is="dom-if" if="{{quote.last_extended_hours_trade_price}}"><div>{{_calcReturn(quote.last_extended_hours_trade_price, positionobject.quantity, positionobject.average_buy_price)}}</div></template>
+            </div>
+          </div>
+
+          <div style="width:1px;/* height:55px; */background-color:#363F43;margin: 0px 40px 0px 40px;"></div>
+        </div>
+
+
+       
+
+        <div class="layout horizontal flex">
+            <div class="flex fundimental_box" >
+              <div class="layout horizontal"><div secondary small class="flex">OPEN</div><div>{{_round(fundamentals.open)}}</div></div>
+              <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+              <div class="layout horizontal"><div secondary small class="flex">HIGH</div><div >{{_round(fundamentals.high)}}</div></div>
+              <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+              <div class="layout horizontal"><div secondary small class="flex">LOW</div><div>{{_round(fundamentals.low)}}</div></div>
+            </div>
+
+            <div class="flex" style="max-width:40px; min-width:10px;"></div>
+
+            <div class="flex fundimental_box" >
+              <div class="layout horizontal"><div secondary small class="flex">VOLUME</div><div>{{_nFormatter(fundamentals.volume)}}</div></div>
+              <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+              <div class="layout horizontal"><div secondary small class="flex">AVG VOLUME</div><div>{{_nFormatter(fundamentals.average_volume)}}</div></div>
+              <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+              <div class="layout horizontal"><div secondary small class="flex">52 WK HIGH</div><div>{{_round(fundamentals.high_52_weeks)}}</div></div>
+            </div>
+
+            <div class="flex" style="max-width:40px; min-width:10px;"></div>
+
+            <div class="flex fundimental_box">
+                <div class="layout horizontal"><div secondary small class="flex">DIV/YIELD</div><div>{{_round(fundamentals.divident_yield)}}</div></div>
+                <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+                <div class="layout horizontal"><div secondary small class="flex">52 WK LOW</div><div>{{_round(fundamentals.low_52_weeks)}}</div></div>
+                <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
+                <div class="layout horizontal"><div secondary small class="flex">MKT CAP</div><div>{{_nFormatter(fundamentals.market_cap)}}</div></div>
+            </div>
+        </div>
+        
+      </div>
+    
+     <!-- Border -->
+     <div class="border1"></div>
+
     <!-- Fundimentals -->
     <div class="layout horizontal">
-
-      <div class="flex fundimental_box" >
-        <h3>Stats</h3>
-        <div class="layout horizontal"><div secondary small class="flex">OPEN</div><div>{{_round(fundamentals.open)}}</div></div>
-        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-        <div class="layout horizontal"><div secondary small class="flex">HIGH</div><div >{{_round(fundamentals.high)}}</div></div>
-        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-        <div class="layout horizontal"><div secondary small class="flex">LOW</div><div>{{_round(fundamentals.low)}}</div></div>
-        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-        <div class="layout horizontal"><div secondary small class="flex">VOLUME</div><div>{{_nFormatter(fundamentals.volume)}}</div></div>
-        <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-        <div class="layout horizontal"><div secondary small class="flex">AVG VOLUME</div><div>{{_nFormatter(fundamentals.average_volume)}}</div></div>
-
-      </div>
-
-      <div class="flex" style="max-width:40px; min-width:10px;"></div>
-
-      <div class="flex fundimental_box">
-        <h3>&nbsp;</h3>
-          <div class="layout horizontal"><div secondary small class="flex">52 WK HIGH</div><div>{{_round(fundamentals.high_52_weeks)}}</div></div>
-          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-          <div class="layout horizontal"><div secondary small class="flex">DIV/YIELD</div><div>{{_round(fundamentals.divident_yield)}}</div></div>
-          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-          <div class="layout horizontal"><div secondary small class="flex">52 WK LOW</div><div>{{_round(fundamentals.low_52_weeks)}}</div></div>
-          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-          <div class="layout horizontal"><div secondary small class="flex">MKT CAP</div><div>{{_nFormatter(fundamentals.market_cap)}}</div></div>
-          <div style="width:100%; height:1px; background-color:#363F43;margin: 5px 0;"></div>
-          <div class="layout horizontal"><div secondary small class="flex">P/E RATIO</div><div>{{_round(fundamentals.pe_ratio)}}</div></div>
-      </div>
-
-      <div class="flex" style="max-width:40px; min-width:10px;"></div>
-
-      <div class="flex about_box">
-          <h3>About</h3>
-          <div class="layout horizontal"><div class="flex" style="max-height:165px;text-overflow: ellipsis;overflow: hidden;">{{fundamentals.description}}</div></div>
+      <div class="about_box">
+          <h3 style="margin-bottom:5px">About</h3>
+          <div class="layout horizontal"><div class="flex" style="max-height:100px;min-height:50px;text-overflow: ellipsis;overflow: hidden;">{{fundamentals.description}}</div></div>
       </div>
 
      </div>
 
       <!-- Border -->
     <div class="border1"></div>
-
-     <div class="layout horizontal end-justified">
+      <div id="buySellButtons" show="true"  class="layout horizontal end-justified">
+      <paper-button id="addToWatchListButton" show="false" style="font-size:16px;border: 1px solid white;margin:0 10px 0 0" on-tap='_addToWatchlist'>+</paper-button>
       <paper-button isenabled$={{cansell}} id="sellButton" style="font-size:16px;background-color:#30CD9A;min-width:135px;margin:0 10px 0 0" on-tap='_openDialog' title="Sell" data-id="OrderDialog" data-isPositionAtTarget=true data-orderType='sell'>Sell</paper-button>
       <paper-button isenabled$={{canbuy}} id="buyButton" style="font-size:16px;background-color:#30CD9A;min-width:135px;margin:0 0 0 10px" on-tap='_openDialog' title="Buy" data-id="OrderDialog" data-isPositionAtTarget=true data-orderType='buy'>Buy</paper-button>
-     </div>
-
+      </div>
     </div>
     
     
@@ -223,7 +298,6 @@
       <div class="flex"></div>
       <div class="self-center" style="width:80%;max-width:900px;padding:0">
         <div class="horizontal layout end-justified">
-          <!-- <paper-button  dialog-confirm style="background-color:white; border-radius:0;margin:0">X</paper-button> -->
           <paper-icon-button dialog-confirm style="background-color:white; border-radius:0;margin-bottom:-40px;margin-right:-40px"  icon="close" ></paper-icon-button>
         </div>
       </div>
@@ -257,7 +331,6 @@
         </div>
       </div>
 
-      <!-- <stock-twits class="self-center"  id="stockTwits" symbol$="" style="margin:0;padding:40px;max-width:900px;background-color:white; width:80%;height:460px"></stock-twits> -->
       <object id="objecFrameTwits" class="self-center" data="" type="text/html"  width="80%" height="460" style="margin:0;padding:40px;max-width:900px;background-color:white"></object>
       
       <div style="height:30px"></div>
@@ -269,7 +342,7 @@
       <div class="horizontal layout end-justified" style="padding:0;margin:0">
         <paper-icon-button dialog-confirm  icon="close" style="background-color:white;"></paper-icon-button>
       </div>
-      <my-stock-order id="orderView" selecteditem={{selecteditem}} instrument={{instrument.url}} token=[[token]] symbol=[[symbol]] side={{orderType}} style="margin-top:0" account=[[accounturl]]></my-stock-order>
+      <my-stock-order id="orderView" selecteditem={{selecteditem}} isfollowing=[[isfollowing]] instrument={{instrument.url}} token=[[token]] symbol=[[symbol]] side={{orderType}} style="margin-top:0" account=[[accounturl]]></my-stock-order>
     </paper-dialog>
       
 
@@ -363,33 +436,43 @@
             type: String
           },
 
-          selecteditem: {
-            type: Object,
-            value: null
-          },
-
           cansell: {
             type: String,
-            value: 'false'
+            value: 'false',
           },
 
           canbuy: {
             type: String,
-            value: 'false'
+            value: 'false',
+
           },
 
           buyingpower: {
             type: Number
-          }
+          },
 
+          positionobject: {
+            type: Object,
+            value: null
+          },
+          
+          isfollowing:{
+            type: Boolean,
+            notify: false,
+          },   
+          watchlistaddurl:{
+            type: String,
+            value: '', 
+          },
         };
       }
       _resetOrderView(){
         this.shadowRoot.querySelector('#orderView')._reset()
       }
+
       ready() {
         super.ready();
-
+   
         window.addEventListener("resize",  e =>  this._onResize(e));
         this._updateData();
       };
@@ -422,13 +505,9 @@
       
         
       }
+
       _symbolLoaded(val) {
         if (val == '') return
-
-        this.$.tracker.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.tracker.gaSetUserId(SHA256(this.username));
-        this.$.tracker.gaTrackPageView('StockDetail/' + this.symbol);
-        this.$.tracker.gaTrackEvent('App-Actions', 'Stock-Click', 'Stock', this.symbol)
 
         this.$.objecFrame.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/my-Interactive-chart.html?alt=media&symbol=" + this.symbol
         this.$.objecFrameTwits.data = "https://firebasestorage.googleapis.com/v0/b/robinhood-web.appspot.com/o/stock-twits.html?alt=media&token=fdd87234-181f-402c-a6d3-07b505f794db&symbol=" + this.symbol
@@ -444,6 +523,27 @@
   
         this.quoteurl =  'https://api.robinhood.com/quotes/'  + this.symbol + '/'
         this.histquoteurl =  'https://api.robinhood.com/quotes/historicals/' + this.symbol + '/?'+ this.chartOptSelected
+
+
+        if (this.isfollowing == false) {  
+          this.$.positionWrap.setAttribute("show", "false");
+          this.$.sellButton.setAttribute("show", "false"); 
+          this.$.addToWatchListButton.setAttribute("show", "true"); 
+        }
+        else {
+        
+          this.$.addToWatchListButton.setAttribute("show", "false"); 
+          this.$.sellButton.setAttribute("show", "true"); 
+          }
+          
+          this.isfollowing = true;
+      }
+
+      _addToWatchlist() {
+
+         this.watchlistaddurl = "https://api.robinhood.com/watchlists/Default/"
+         this.$.addtowatchlistajax.body = {instrument: this.instrument.url}
+         this.$.addtowatchlistajax.generateRequest();
       }
       
       _chartSelectionChange(val){
@@ -464,6 +564,10 @@
 
       }
 
+      _isEqualTo(val, to){
+      
+        return val == 'undefined'? 'false': 'true'
+      }
       _onResize(e) {
         if(this.chart == null) return;
    
@@ -488,21 +592,34 @@
           
           var change = (currentPrice - priceFrom);
           var percentChange = ((change / priceFrom) * 100)  ;
+          var symbol = (percentChange > 0) ? '+':'';
 
-          return this._round(change) + ' ('  + ((percentChange > 0) ? '+' + this._round(percentChange): this._round(percentChange)) + '%)'
+          return  symbol + this._round(change) + ' ('  + symbol + this._round(percentChange) + '%)'
       };
 
-      _sellavailability(){
+      _calcEquity(currentPrice, qty){
+        return this._round((qty * currentPrice))
+      }
 
-        if (this.selecteditem != null) {
-          var qty = parseInt(this.selecteditem.getAttribute('qty'))
-          this.cansell = (qty > 0)? 'true': 'false'
-        }
-        else { this.cansell = 'false'; }
+      _calcCost(avgPrice, qty){
+        return this._round((qty * avgPrice))
+      }
+
+      _calcReturn(currentPrice, qty, avgPrice){
+        return this._calcChange(this._calcEquity(currentPrice, qty),  this._calcCost(avgPrice, qty))
+      }
+
+      _sellavailability(){
+          if (this.selecteditem && this.isfollowing) {
+            var qty = parseInt(this.selecteditem.getAttribute('qty'))
+            this.cansell = (qty > 0)? 'true': 'false';
+            this.$.sellButton.setAttribute("show", "true"); 
+            (qty > 0) ? this.$.positionWrap.setAttribute("show", "true"): this.$.positionWrap.setAttribute("show", "false");
+          }
       }
 
       _buyavailability(){
-        this.canbuy =  (this.buyingpower > 0)? 'true': 'false'
+          this.canbuy =  (this.buyingpower > 0)? 'true': 'false';
       }
 
       _round(num) {
@@ -607,7 +724,7 @@
                   datasets: [
                       {
                           data: prices,
-                          fill: true,
+                          fill: false,
                           lineTension: 0.2,
                           pointRadius: 0,
                           borderWidth: 2.5,
@@ -615,11 +732,14 @@
                           pointStyle: 'circle',
                           pointBorderColor: borderColor,
                           pointBackgroundColor: borderColor,
-                          backgroundColor: '#040D14',
+
                       },
                   ],
               },
               options: {
+                  animation: {duration: 1800,},
+                  hover: {animationDuration: 0,},
+                  responsiveAnimationDuration: 0,
                   responsive: true,
                   maintainAspectRatio: false,
                   hover: { mode: 'index',intersect: false},
@@ -632,7 +752,7 @@
                       xAxes: [{
                     
                           ticks: { fontColor: '#a9aebd', fontSize: '13', display: false,},
-                          gridLines: {display: false,}, 
+                          gridLines: {display: false,  drawBorder: false,}, 
                       }]
                   },
                   tooltips: {

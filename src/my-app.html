@@ -25,31 +25,30 @@
 <link rel="lazy-import" href="my-mfa.html">
 <link rel="lazy-import" href="my-history.html">
 <link rel="lazy-import" href="my-view404.html">
-
 <link rel="import" href="my-help.html">
-<link rel="import" href="my-ticker-2.html">
-<link rel="import" href="simple-tracker.html">
+<link rel="import" href="my-search.html">
 
 
 <script src="../bower_components/moment/moment.js"></script>
 
 <dom-module id="my-app">
   <template>
-
-    <simple-tracker id="googleanalytics"></simple-tracker>
+    
     <scary-cookie id="cookie" name="authCookie" value="{{token}}" expires="{{expiredate}}" disable-autosave></scary-cookie>
+    <!-- <scary-cookie id="cookie" name="authCookie" value="{{token}}" ></scary-cookie> -->
 
     <style include="my-app-style iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
-        --app-primary-color: #1A1E24;
+        --app-primary-color: #1C2229;
         --app-secondary-color: #FEFEFE;
         --app-drawer-width: 85px;
         --paper-input-container-underline-focus: {
             border-bottom: 2px solid #30CD9A;
         };
-
+      
         display: block;
+
       }
 
     #contentContainer {
@@ -63,7 +62,7 @@
       }
 
       app-drawer > app-toolbar {
-        background-color: #30CD9A;
+        /* background-color: #30CD9A; */
         padding:0;
       }
 
@@ -118,13 +117,14 @@
         pattern="[[rootPath]]:page"
         data="{{routeData}}"
         tail="{{subroute}}"></app-route>
+ 
 
     <app-drawer-layout fullbleed narrow="{{narrow}}" responsive-width="0px" >
       <template is="dom-if" if="{{token}}">
         <!-- Drawer content -->
         <app-drawer id="drawer" slot="drawer" swipe-open="[[narrow]]">
 
-          <app-toolbar style="background-color:#30CD9A">
+          <app-toolbar>
               <paper-icon-button class="logo" src="../images/manifest/logo_white_ninja.svg"></paper-icon-button>
           </app-toolbar>
 
@@ -159,14 +159,16 @@
               <paper-icon-button icon="my-icons:menu" drawer-toggle></paper-icon-button>
               <div class="layout horizontal flex">
                 <div class="flex" main-title>
-                  <my-ticker-2 name="ticker"></my-ticker-2>
+                </div>
+                <div>
+                  <my-search></my-search>
                 </div>
             </app-toolbar>
           </template>
 
         </app-header>
 
-        <iron-pages
+        <iron-pages id="mainPages"
             selected="[[page]]"
             attr-for-selected="name"
             fallback-selection="view404"
@@ -179,7 +181,7 @@
               on-needmfa="needmfa"
               class="flex layout horizontal around-justified">
           </my-login>
-          <my-portfolio name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
+          <my-portfolio id="portfolio" name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
           <my-account name="account" token={{token}}></my-account>
           <my-history id="histview" st name="history" username={{user.username}} token={{token}} style="height:100%"></my-history>
           <my-view404 name="view404"></my-view404>
@@ -196,7 +198,7 @@
         <li style="padding:5px;"><b>Robinhood Notifications:</b> Display notification that are currently found under your chart on the main screen of the mobile app.</li>
         <li style="padding:5px;"><b>Top Movers:</b> Top movers for the day.</li>
         <li style="padding:5px;"><b>Economic Calendar:</b> Economic Calendar would show key upcoming economic events, announcements and news.</li>
-        <li style="padding:5px;"><b>Symbol Search:</b> Search for a stock symbol and be able to add to your watchlist.</li>
+        <li style="padding:5px;text-decoration: line-through"><b>Symbol Search:</b> Search for a stock symbol and be able to add to your watchlist.</li>
         <li style="padding:5px;"><b>Screener:</b> Add a screener widget with custom filters and preset indicators.</li>
       </ul>
       <div class="layout horizontal end-justified" style="margin-top:10px;"><paper-button dialog-confirm raised style="background-color:#30CD9A;color:white">CLOSE</paper-button></div>
@@ -251,10 +253,6 @@
       };
 
       logout() {
-        
-        this.$.googleanalytics.gaCreate('YOUR GOOGLE ANALYTICS TRACKING ID');
-        this.$.googleanalytics.gaSetUserId(SHA256(this.user.username));
-        this.$.googleanalytics.gaTrackEvent('App-Actions', 'Sign-Out')
         
         this.token = null;
         this.$.cookie.deleteCookie();

@@ -1,0 +1,162 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner-lite.html">
+
+
+
+<dom-module id="my-search">
+  <template>
+      <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style>
+      :host {
+        background-color: #1E232A;
+        display: block;
+        padding: 10px 20px;
+        color: #E6E6E6!important;
+        width:270px;
+        font-size: 14px;
+
+        --paper-spinner-color: #30CD9A;
+        --paper-spinner-stroke-width: 2px;
+
+         /* Reset some defaults */
+        --paper-input-container-underline: { display: none; height: 0;};
+        --paper-input-container-underline-focus: { display: none; };
+        
+        /*  custom styles */
+        --paper-input-container:{
+          background-color: #363C45;
+          padding:5px 10px;
+          border-radius:4px;
+          color:#E6E6E6;
+         
+        };
+        --paper-input-container-input: {
+          color:#E6E6E6;
+        };
+        --paper-input-container-label: {color:#E6E6E6;};
+
+        --paper-item-min-height:34px;
+        --paper-item:{cursor: pointer;font-size: 14px;white-space: nowrap;}
+      }
+
+      paper-item:hover{background-color:#363C45}
+      #itemListDiv {position: absolute;background-color: #1E232A}
+    </style>
+
+    <iron-ajax id="instrumentaSearchjax"
+        url="{{url}}"
+        headers= '{{headers}}'
+        method="GET"
+        handle-as="json"
+        last-response="{{instruments}}"
+        on-response="_handleResponse">
+    </iron-ajax>
+    
+    <paper-input
+      id="searchInput"
+      value="{{value}}"
+      on-keyup="_onKeyUp"
+      on-focusout="_onFocusOut"
+      focused="{{focused}}"
+      no-label-float>
+      <iron-icon icon="search" style="color:#E6E6E6" slot="suffix"></iron-icon>
+        <div style="position:absolute;top:2px;right:0;margin-right:30px;" slot="prefix">
+          <paper-spinner-lite id="spinner" style="height:20px; width:20px"></paper-spinner-lite>
+        </div>
+    </paper-input>
+
+    <div id="itemListDiv">
+      <div>
+        <paper-material elevation="3">
+          <template id="itemListTemplate" is="dom-repeat" items="[[items]]">
+            <paper-item on-tap="_onItemTap" index="[[index]]">
+              <div class="layout horizontal flex">
+                <div style="width:85px">{{item.symbol}}</div>
+                <div class="flex" style="text-overflow: ellipsis; overflow: hidden; width:153px;">{{item.simple_name}}</div>
+              </div>
+            </paper-item>
+          </template>
+        </paper-material>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    class MySearch extends Polymer.Element {
+      static get is() { return 'my-search'; }
+      static get properties() {
+        return {
+          // This shouldn't be neccessary, but the Analyzer isn't picking up
+          // Polymer.Element#rootPath
+          rootPath: String,
+          url:{
+            type: String,
+            value: '', 
+          },
+          value: {
+            notify: true,
+            type: String
+          },
+          headers: {
+            type: Object,
+            computed: 'getHeaders()'
+          },
+          instruments: {
+            type: Object,
+            value: null,
+            notify: false,
+            reflectToAttribute: true,
+          },
+          items:{
+            type:Array
+          }
+        };
+      }
+      _handleResponse() {
+       this.items = this.instruments.instruments
+       this.shadowRoot.querySelector('#spinner').active = false;
+      }
+      _onKeyUp(e, detail) {
+        if (this.value.length > 0) {
+          this.shadowRoot.querySelector('#spinner').active = true;
+          this.loadList();
+        }
+        else {this.items = []; }
+      }
+      _onFocusOut(e) {
+        
+        if(!e.relatedTarget){
+          this.items = []
+        }
+      }
+
+      _onItemTap(e, detail){
+        
+        // go to STOCK detail page
+        var appHeader = this.parentNode.parentNode.parentNode.parentNode.parentNode
+        appHeader.querySelector('#mainPages').querySelector('#portfolio').selecteditem = "";
+        appHeader.querySelector('#mainPages').querySelector('#portfolio').isfollowing = false;
+        appHeader.querySelector('#mainPages').querySelector('#portfolio').symbol = e.model.item.symbol;
+
+        this.$.searchInput.value = ""
+        this.items = []
+
+      };
+      loadList(){
+        this.url = "https://api.robinhood.com/midlands/search/?query=" + this.value
+        this.$.instrumentaSearchjax.generateRequest();
+      }
+      getHeaders() {
+        return{"Accept": "application/json", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+        };
+    }
+
+    window.customElements.define(MySearch.is, MySearch);
+  </script>
+</dom-module>

@@ -40,6 +40,7 @@
     <meta name="msapplication-tap-highlight" content="no">
 
     <script src="bower_components/xhook/dist/xhook.js"></script>
+
     <script src="SHA256.js"></script>
     <script>
 
@@ -63,6 +64,9 @@
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             registration.addEventListener('updatefound', () => {
               console.log('New ServiceWorker found.');
+              if (document.getElementById("myapp").page == 'portfolio'){
+                document.getElementById("myapp").shadowRoot.querySelector('#portfolio').update = true;
+              }
             });
           });
         });
@@ -84,15 +88,16 @@
         line-height: 1.5;
         min-height: 100vh;
         color:#FEFEFE;
-        background-color: #040D14;
+        background-color: #121921;
       }
     </style>
   </head>
   <body>
-
+    
     <!-- Main App Shell Element -->
-    <my-app></my-app>
+    <my-app id="myapp"></my-app>
 
+    
     <noscript>
       Please enable JavaScript to view this website.
     </noscript>

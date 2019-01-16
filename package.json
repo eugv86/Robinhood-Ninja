@@ -1,6 +1,6 @@
 {
   "name": "robinhood-ninja",
-  "license": "BSD-3-Clause",
+  "license": "Apache License 2.0",
   "devDependencies": {
     "eslint": "^3.19.0",
     "eslint-config-google": "^0.7.0",
@@ -11,11 +11,11 @@
     "lint:javascript": "eslint . --ext js,html --ignore-path .gitignore"
   },
   "dependencies": {
+    "bower": "^1.8.4",
     "btoa": "^1.1.2",
     "cors": "^2.8.4",
     "express": "^4.15.4",
-    "request": "^2.83.0",
-    "robinhood": "^1.1.1"
+    "request": "^2.83.0"
   },
   "description": "Robinhood Web App",
   "version": "1.0.0",
