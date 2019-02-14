@@ -1,0 +1,850 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html" />
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html"> 
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/vaadin-grid/vaadin-grid.html">
+<link rel="import" href="../bower_components/vaadin-grid/vaadin-grid-sort-column.html">
+<link rel="import" href="../bower_components/vaadin-grid/vaadin-grid-sorter.html">
+<link rel="import" href="../bower_components/vaadin-grid/vaadin-grid-filter.html">
+<link rel="import" href="../bower_components/vaadin-grid/vaadin-grid-column-group.html">
+<link rel="import" href="../bower_components/nullxlsx/dist/import-nullxlsx.html">
+<link rel="import" href="../bower_components/nullxlsx/dist/import-nullzip.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<dom-module id="my-grid" theme-for="vaadin-grid">
+    <template>
+        
+        <style>
+            /* Scrollbar width */
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+
+            /* Scrollbar track */
+            ::-webkit-scrollbar-track {
+                display: none;
+  
+            }
+            ::-webkit-scrollbar-button {
+              background: #121921; 
+
+            }
+
+            /* Scrollbar handle */
+            :hover::-webkit-scrollbar-thumb{
+              background-color: #30CD9A;
+              display: block;
+              border-radius: 4px
+            }
+
+            td[part~="cell"] {
+                background-color: #121921;
+                color: #9e9e9e;
+                /* border-bottom: 1px solid #363F43 */
+            } 
+
+            th[part~="header-cell"] {
+                background-color: #121921;
+                color: #FEFEFE;
+               
+            } 
+            [part~="header-cell"] ::slotted(vaadin-grid-cell-content){
+                font-weight: 400!important;
+                border-bottom: 1px solid #363F43
+            } 
+
+        </style>
+    </template>
+</dom-module>
+
+<dom-module id="my-pl">
+  <template>
+    <style include="iron-flex iron-flex-alignment"></style>
+    <style include="shared-styles" is="custom-style">
+
+
+      :host {
+        display: block;
+        overflow:auto; 
+       
+        background-color: #121921
+
+      } 
+      
+      .scrollContainer {
+        overflow:hidden; 
+        /* height:100%; */
+        padding: 35px 40px;
+      }
+      .scrollContainer:hover::-webkit-scrollbar-thumb{
+        background-color: #30CD9A;
+      }
+      vaadin-grid{
+        height:calc(100vh - 160px);
+        font-size: 14px;
+        background-color: transparent;
+        border: 1px solid #363F43
+        
+      }
+      span[status=WIN]{
+        color:#30CD9A
+      }
+      span[status=LOSS]{
+        color:#F45531
+      }
+
+      .stat_box{
+        width:150px;
+        height:45px;
+        margin:0 0 20px 0;
+        padding:0 5px;
+        color: #FEFEFE;
+        border-left: 3px solid #FEFEFE;
+      }
+
+      .stat_box >.header{
+        font-size: 14px;
+        color: #9e9e9e;
+      }
+      .stat_box >.content{
+        font-size: 16px
+      }
+      .stat_box[isnegative=true]{
+        border-left: 3px solid #F45531;
+      }
+      .stat_box[isnegative=false]{
+        border-left: 3px solid #30CD9A;
+      }
+    </style>
+
+
+    <iron-ajax id="ordersajax" 
+        url="https://api.robinhood.com/orders/" 
+        headers="{{ headers }}" 
+        method="GET" 
+        handle-as="json" 
+        on-response="_ordersresponse">
+    </iron-ajax>
+    
+    <iron-ajax id="stockinfoajax" 
+      url="" 
+      headers="{{ headers }}"
+      method="GET" 
+      handle-as="json">
+    </iron-ajax>
+
+    <iron-ajax id="subfeesajax" 
+        url="https://api.robinhood.com/subscription/subscription_fees/" 
+        headers="{{ headers }}" 
+        method="GET" 
+        handle-as="json" 
+        on-response="_subscriptionfeesresponse">
+    </iron-ajax>
+    
+    <iron-ajax  id="dividendsajax"
+      url="https://api.robinhood.com/dividends/"
+      headers="{{ headers }}"
+      method="GET"
+      handle-as="json"
+      on-response="_dividendsresponse">
+    </iron-ajax>
+
+    <iron-ajax  id="splitsajax"
+      url=""
+      headers="{{ headers }}"
+      method="GET"
+      handle-as="json">
+    </iron-ajax>
+
+    <div class="scrollContainer">
+      <!-- <button id="button" on-click="toggle">Show Orders</button> -->
+
+      <div class="horizontal layout" >
+        <div class="stats layout vertical">
+
+          <div class="stat_box" isnegative$="[[_isNegative(relizedTotal.pl)]]">
+            <div class="header">STATUS</div>
+            <div class="content" >[[relizedTotal.status]]</div>
+          </div>
+
+          <div class="stat_box"  isnegative$="[[_isNegative(relizedTotal.pl)]]">
+            <div class="header">TOTAL P&L</div>
+            <div class="content" >[[relizedTotal.pl]]</div>
+          </div>
+
+          <div class="stat_box"  isnegative$="[[_isNegative(relizedTotal.pl)]]">
+            <div class="header">PERCENT P&L</div>
+            <div class="content">[[relizedTotal.plpercent]]</div>
+          </div>
+
+          <div class="stat_box" style="border-left: 3px solid #30CD9A;">
+            <div class="header">WINS</div>
+            <div class="content">[[relizedTotal.winCount]]</div>
+          </div>
+
+          <div class="stat_box" style="border-left: 3px solid #F45531;">
+            <div class="header">LOSSES</div>
+            <div class="content">[[relizedTotal.lossCount]]</div>
+          </div>
+
+          <div class="stat_box" style="border-left: 3px solid #30CD9A;">
+            <div class="header">DIVIDENDS</div>
+            <div class="content">[[dividendstotal]]</div>
+          </div>
+
+          <div class="stat_box" style="border-left: 3px solid #F45531;;">
+            <div class="header">SUB FEES</div>
+            <div class="content">[[subfeestotal]]</div>
+          </div>
+         
+        </div>
+
+         <!-- Border -->
+         <div style="width:10px;"></div>
+
+        <!-- transactions -->
+        <vaadin-grid id="gridtransactions" theme="row-dividers compact no-border" items="[[transactions]]" >
+          <vaadin-grid-column-group header="Exit Transactions">
+            <template>
+                <button id="btnExportGrid" on-click="_exportGrid">Export to XLSX</button>
+            </template>
+              
+            <vaadin-grid-column path="id" hidden></vaadin-grid-column> 
+            <vaadin-grid-sort-column path="date" width="88px" direction="desc">
+              <template>[[_dateToLocal(item.date)]]</template>
+            </vaadin-grid-sort-column> 
+            <vaadin-grid-sort-column path="symbol" width="75px"></vaadin-grid-sort-column>
+            <vaadin-grid-column path="sell_qty" header="Qty" width="55px"></vaadin-grid-column>
+            <vaadin-grid-column path="buy_qty" hidden></vaadin-grid-column>
+            <vaadin-grid-column path="avg_buy_per_share" header="Buy Price" width="75px"></vaadin-grid-column>
+            <vaadin-grid-column path="avg_sell_per_share" header="Sell Price" width="75px"></vaadin-grid-column>
+            <vaadin-grid-column path="buy_total" header="Buy Total" width="75px"></vaadin-grid-column>
+            <vaadin-grid-column path="sell_total" header="Sell Total" width="75px"></vaadin-grid-column>
+            <vaadin-grid-column path="fees" width="45px" ></vaadin-grid-column>
+            <vaadin-grid-sort-column path="winloss" header="W/L" text-align="center" width="65px">
+              <template><span status$=[[item.winloss]]>[[item.winloss]]</span></template>
+            </vaadin-grid-sort-column>
+            <vaadin-grid-sort-column path="realizedpl" header="P&L" text-align="center" width="70px"></vaadin-grid-sort-column>
+            <vaadin-grid-column path="realizedpl_percent" header="P&L %" text-align="center" width="70px">
+              <template>[[item.realizedpl_percent]]%</template>
+            </vaadin-grid-column>
+          </vaadin-grid-column-group>
+        </vaadin-grid>
+
+        <!-- Border -->
+        <div style="width:10px;"></div>
+
+         <!-- Totals -->
+        <vaadin-grid theme="row-dividers compact" items="[[totals]]" style="max-width:235px">
+          <vaadin-grid-column-group header="Totals By Symbol">
+            <vaadin-grid-sort-column path="symbol" width="65px"></vaadin-grid-sort-column>
+            <vaadin-grid-sort-column path="realizedpl" header="P&L" width="60px">
+              <template>[[_to2decimal(item.realizedpl)]]</template>
+            </vaadin-grid-sort-column>
+            <vaadin-grid-column path="realizedpl_percent"header="P&L %" width="60px">
+              <template>[[_calcpnlpercent(item.realizedpl, item.buy_total)]]%</template>
+            </vaadin-grid-column>
+          </vaadin-grid-column-group>
+        </vaadin-grid>
+
+      </div>
+      
+      <div>
+       
+      </div>
+
+      <div class="horizontal layout" >
+        
+      <iron-collapse id="collapse">
+        <!-- Orders -->
+        <vaadin-grid theme="compact" items="[[orders]]" column-reordering-allowed style="height: 95vh; width:800px;flex:none" >
+          <!-- <vaadin-grid-column flex-grow="0" > <template>[[index]]</template></vaadin-grid-column> -->
+          <vaadin-grid-column-group header="Orders">
+            <vaadin-grid-column path="id" width="50px" flex-grow="0"  hidden></vaadin-grid-column> 
+            <vaadin-grid-column path="instrument" width="50px" flex-grow="0"  hidden></vaadin-grid-column> 
+            <vaadin-grid-column flex-grow="0" header="date">
+                <template class="header">
+                  <vaadin-grid-sorter path="created_at">date</vaadin-grid-sorter>
+                </template>
+              <template>[[_dateToLocal(item.created_at)]]</template>
+            </vaadin-grid-column> 
+            <vaadin-grid-sort-column path="symbol" width="80px" flex-grow="0" ></vaadin-grid-column>
+            <vaadin-grid-sort-column path="side" width="60px" flex-grow="0" ></vaadin-grid-sort-column>
+            <vaadin-grid-column path="quantity" header="QTY" width="75px" flex-grow="0" ></vaadin-grid-column>
+            <vaadin-grid-column path="average_price" header="AVG Price" width="85px" flex-grow="0" ></vaadin-grid-column>
+            <vaadin-grid-column path="fees"  width="50px" flex-grow="0"></vaadin-grid-column>
+            <vaadin-grid-column path="split_divisor" header="Divisor"  width="75px" flex-grow="0"></vaadin-grid-column>
+            <vaadin-grid-column path="split_multiplier" header="Multiplier"  width="75px" flex-grow="0"></vaadin-grid-column>
+            <vaadin-grid-column path="total" width="75px" flex-grow="0"></vaadin-grid-column>
+            <vaadin-grid-column path="isLeftOver" header="Vertual" width="110px" flex-grow="0"></vaadin-grid-column>
+          </vaadin-grid-column-group>
+        </vaadin-grid>
+      </iron-collapse>
+
+        <!-- <div class="flex">
+         
+          <div class="layout horizontal flex">
+
+            
+            <vaadin-grid class="flex" theme="row-dividers" items="[[dividends]]">
+              <vaadin-grid-column-group header="Dividends">
+                <vaadin-grid-column header="date"><template>[[_dateToLocal(item.paid_at)]]</template></vaadin-grid-column> 
+                <vaadin-grid-column header="symbol"><template>[[_getInstrumentID(item.instrument)]]</template></vaadin-grid-column> 
+                <vaadin-grid-column path="amount"></vaadin-grid-column>
+            </vaadin-grid-column-group>
+            </vaadin-grid>
+
+        
+            <vaadin-grid theme="row-dividers" items="[[subfees]]" >
+              <vaadin-grid-column-group header="Subscription Fees">
+                <vaadin-grid-column header="date"><template>[[_dateToLocal(item.created_at)]]</template></vaadin-grid-column> 
+                <vaadin-grid-column path="amount" ></vaadin-grid-column>
+              </vaadin-grid-column-group> 
+            </vaadin-grid>
+          </div>
+
+        </div> -->
+
+      </div>
+    
+    </div>
+  
+  </template>
+
+  <script>
+    class MyPl extends Polymer.Element {
+      static get is() { return 'my-pl'; }
+      static get properties() {
+        return {
+          // This shouldn't be neccessary, but the Analyzer isn't picking up
+          // Polymer.Element#rootPath
+          rootPath: String,
+    
+          relizedTotal: {
+            type: Object,
+            value: {},
+          },
+          totals: {
+            type: Array,
+            value: [],
+          },
+
+          transactions: {
+            type: Array,
+            value: [],
+          },
+
+          orders: {
+            type: Array,
+            value: [],
+          },
+
+          instruments: {
+            type: Array,
+            value: [],
+          },
+
+          stocksplits: {
+            type: Array,
+            value: [],
+          },
+
+          dividends: {
+            type: Array,
+            value: [],
+          },
+
+          subfeestotal:{
+            type:String
+          },
+          dividendstotal:{
+            type:String
+          },
+
+          subfees: {
+            type: Array,
+            value: [],
+          },
+ 
+          headers: {
+            type: Object,
+            computed: "getHeaders()"
+          },
+
+          token: {
+            type: String,
+            value:""
+            },
+          username: {
+            type: String,
+            value: ''
+          }
+        };
+      }
+
+      ready() {
+        super.ready();
+       
+       // this.$.ordersajax.url = "https://api.robinhood.com/orders/";
+       this.$.ordersajax.generateRequest();
+       this.$.subfeesajax.generateRequest();
+       this.$.dividendsajax.generateRequest();    
+      }
+
+
+      toggle() {
+        this.$.collapse.toggle();
+        this.$.button.setAttribute('aria-expanded', this.$.collapse.opened);
+      }
+
+      _ordersresponse(e) {
+        var doc = this;
+        //append results
+        doc.orders = doc.orders.concat(e.detail.response.results).filter(function(val) { return val.average_price != null });
+
+     
+        if (e.detail.response.next != null) {
+          doc.$.ordersajax.url = e.detail.response.next;
+          doc.$.ordersajax.generateRequest();
+          return;
+        }else {
+
+          doc._sortData().then(function(){
+
+          (async function() {
+            var groupIndex = 0
+            var lastInstrument
+            var carryOverBuys = []
+           
+           for (var i = 0, _len = doc.orders.length; i < _len; i++) {
+            await new Promise(next => {
+              var row = doc.orders[i];
+
+              // formatter
+              row.average_price = Number(row.average_price).toFixed(2);
+              row.quantity = Number(row.quantity).toFixed(2);
+              row.split_divisor = 0
+              row.split_multiplier = 0
+              row.isLeftOver = false;
+
+              //assign exit groups
+              row['id'] = groupIndex
+              if (row.side == "sell" && row.instrument == lastInstrument){++groupIndex}
+              else if (row.instrument != lastInstrument){ row['id'] = (++groupIndex);}
+              lastInstrument = row.instrument
+
+
+              // REAL WORK  START=======================================================================================
+             
+              doc._getStockInfo(row.instrument, i).then(function(info) { 
+                doc._setStockInfo(info).then(function(){
+                  doc._getStockSplitInfo(info[0].splits, info[1],info).then(function(splits){
+                    doc._setStockSplitInfo(splits).then(function(){
+                      doc._calOrderTotal(info[1]).then(function(order){
+                        
+                        if(order.side == "sell"){
+                          doc._groupOrdersOnSell(order).then(function(orderGroups){
+                            if (Math.round(orderGroups.sellQty) == Math.round(orderGroups.buyQty)){
+                              doc._createExitTransactions(order, orderGroups)
+                            }else if (Math.round(orderGroups.sellQty) < Math.round(orderGroups.buyQty)){
+                              //create vertual buy orders for exit matching
+                              doc._createVertualBuys(order,orderGroups).then(function(){
+                                  doc._createExitTransactions(order, orderGroups)
+                              })
+                            }else if (Math.round(orderGroups.sellQty) > Math.round(orderGroups.buyQty)){
+                              //find vertual buy and match
+                              doc._findVertualBuys(order, orderGroups).then(function(){
+                                  doc._createExitTransactions(order, orderGroups)
+                              })
+                            }
+                          })
+                        }
+                        next()
+                      })
+                    })
+                  })
+                })
+              })
+       
+              // REAL WORK  END=========================================================================================
+            })   
+           }
+            })().then(function(){
+              doc._createTotals();
+              doc._relizedTotal();
+              doc._addExportForGrid();
+            })   
+          })
+        }
+
+      }
+
+ 
+      _sortData(){
+        var doc = this
+        return new Promise(function(resolve, reject) {
+          doc.orders.sort(doc.dynamicSortMultiple("instrument","created_at"))
+
+          return resolve();
+
+        })
+      }
+      _getStockInfo(instrumenturl, i) {
+        var doc = this
+        var localStockInfo = doc._checkIfLocal(doc.instruments, 'url', instrumenturl)
+
+        if (localStockInfo.length > 0) {
+          return new Promise(function(resolve, reject) {
+            return resolve([localStockInfo[0], i])
+          })
+        }else{
+          doc.$.stockinfoajax.url = instrumenturl;
+          return doc.$.stockinfoajax.generateRequest().completes.then(function(req) { if(Object.keys(req.response).length != 0){ doc.instruments.push(req.response); };return [req.response,i];})
+        }
+      }
+
+      _setStockInfo(info){
+        var doc = this
+        return new Promise(function(resolve, reject) {
+          resolve(doc.set('orders.' + info[1] + '.symbol', info[0].symbol)) 
+        })
+      }
+
+      _getStockSplitInfo(spliturl, i, info) {
+        var doc = this
+       
+        var localsplitarray = this._checkIfLocal(doc.stocksplits, 'instrument', info[0].url)
+       
+        if (localsplitarray.length > 0 || info[0].splitHasRun) {
+          return new Promise(function(resolve, reject) {
+            return resolve([{results:localsplitarray}, i])
+          })
+        }else {
+          //mark that split data request for this stock already occurred so that we dont run again for no reason 
+          var inst =  doc.instruments.filter(function(val){ return val.symbol == info[0].symbol})
+          inst[0].splitHasRun = true;
+          //
+          doc.$.splitsajax.url = spliturl;
+          return doc.$.splitsajax.generateRequest().completes.then(function(req) { /*if(req.response.results.length != 0){*/ doc.stocksplits = doc.stocksplits.concat(req.response.results); /* };*/ return [req.response,i];})
+        }
+
+      }
+
+      _setStockSplitInfo(splits){
+        var doc = this;
+        //console.log(splits)
+        return new Promise(function(resolve, reject) {
+          if (splits[0].results.length > 0)
+          {
+            //
+            // assigns split to any transaction that was before the split so that P&L calculation can be correct latter 
+            //
+            var transactionDate = Date.parse(new Date(doc.orders[splits[1]].created_at))
+            var a = splits[0].results.filter(function(val) {return Date.parse(new Date(val.execution_date)) > transactionDate})
+
+            if (a.length != 0){
+                //Polymer.Set
+                doc.set('orders.' + splits[1] + '.split_divisor', Number(a[0].divisor).toFixed(0)); 
+                doc.set('orders.' + splits[1] + '.split_multiplier', Number(a[0].multiplier).toFixed(0)); 
+
+                //account for split and set new quintity and price
+                var qty = (a[0].divisor > 1) ? doc.orders[splits[1]].quantity / a[0].divisor : doc.orders[splits[1]].quantity * a[0].multiplier
+                var price = (a[0].divisor > 1) ? doc.orders[splits[1]].average_price * a[0].divisor : doc.orders[splits[1]].average_price / a[0].multiplier
+
+                doc.set('orders.' + splits[1] + '.quantity', qty); 
+                doc.set('orders.' + splits[1] + '.average_price', price); 
+            }
+          }
+
+          resolve()
+        })
+      }
+      _calOrderTotal(index){
+        //console.log(index)
+        var doc = this;
+        return new Promise(function(resolve, reject) {
+          var order =  doc.get('orders.' + index)
+          doc.set('orders.' + index + '.total', Number((order.quantity * order.average_price)).toFixed(2))
+          return resolve(order)
+        })
+      }
+      _groupOrdersOnSell(order){
+        
+        var doc = this;
+        return new Promise(function(resolve, reject) {
+          var buyOrders = doc.orders.filter(function(val) {return order.symbol && val.side == "buy" && val.id === order.id})
+          var buyTotal =  buyOrders.reduce((a, b) => a + (Number(b.quantity) * Number(b.average_price)), 0)
+          var buyQty = buyOrders.reduce((a, b) => a + Number(b.quantity), 0)
+
+          var sellOrders = doc.orders.filter(function(val) {return order.symbol && val.side == "sell" && val.id === order.id})
+          var sellTotal = sellOrders.reduce((a, b) => a + Number(b.quantity) * Number(b.average_price), 0)
+          var sellQty = sellOrders.reduce((a, b) => a + Number(b.quantity), 0)
+
+          return resolve({buyOrders, buyTotal, buyQty, sellOrders, sellTotal, sellQty})
+        })
+      }
+      _createVertualBuys(order, orderGroups){
+        var doc = this;
+        return new Promise(function(resolve, reject) {
+          var newBuyQty = (orderGroups.buyQty - orderGroups.sellQty)
+          
+          orderGroups.buyTotal = orderGroups.sellQty * (orderGroups.buyTotal / orderGroups.buyQty)
+          orderGroups.buyQty = orderGroups.sellQty
+          
+
+          let orderCopy = JSON.parse(JSON.stringify(order));
+
+          orderCopy.id = -1
+          orderCopy.quantity = newBuyQty
+          orderCopy.average_price = Number((orderGroups.buyTotal / orderGroups.buyQty)).toFixed(2)
+          orderCopy.total = Number(newBuyQty * (orderGroups.buyTotal / orderGroups.buyQty)).toFixed(2)
+          orderCopy.side = 'buy'
+          orderCopy.fees = 0
+          orderCopy.isLeftOver = true
+        
+          doc.push('orders', orderCopy)
+
+          resolve()
+        })
+
+      }
+      _findVertualBuys(order, orderGroups){
+        var doc = this;
+        return new Promise(function(resolve, reject) {
+          // find left overs from previous sells
+          var leftOver = doc.orders.filter(function(val) {return val.symbol == order.symbol && val.side == "buy" && val.isLeftOver == true})
+          var leftBuyTotal =  leftOver.reduce((a, b) => a + Number(b.quantity) * Number(b.average_price), 0)
+
+          orderGroups.buyQty = orderGroups.sellQty
+          orderGroups.buyTotal = leftBuyTotal
+
+          if (orderGroups.sellQty < leftOver.quantity) {
+              //subtract 
+              order.quantity = (leftOver.quantity - orderGroups.sellQty)
+          } 
+          resolve()
+        })
+      }
+      _createExitTransactions(order, orderGroups){
+    
+        var doc = this;
+        return new Promise(function(resolve, reject) {
+
+          var a = {
+              id: order.id,
+              date: order.created_at,
+              symbol: order.symbol,
+              buy_total: Number(orderGroups.buyTotal).toFixed(2),
+              buy_qty: orderGroups.buyQty,
+              sell_total: Number(orderGroups.sellTotal).toFixed(2),
+              sell_qty: orderGroups.sellQty,
+              avg_buy_per_share: Number(orderGroups.buyTotal /orderGroups.buyQty).toFixed(2),
+              avg_sell_per_share:order.average_price,
+              fees: order.fees,
+              winloss: (Number(orderGroups.sellTotal) - order.fees) > Number(orderGroups.buyTotal) ? 'WIN': 'LOSS',
+              realizedpl: parseFloat(((Number(orderGroups.sellTotal) - Number(orderGroups.buyTotal)) - order.fees).toFixed(2)),
+              realizedpl_percent: Number((((Number(orderGroups.sellTotal) - Number(orderGroups.buyTotal)) - order.fees) / Number(orderGroups.buyTotal)) * 100).toFixed(3)
+
+            };
+
+          resolve(doc.push('transactions', a))
+        })
+      }
+
+      _createTotals(){
+        var doc = this
+        this.transactions.reduce(function(acc, val) {
+          if (!acc[val.symbol]) {
+
+            acc[val.symbol] = { symbol: val.symbol, realizedpl: 0, realizedpl_percent: 0, buy_total: 0 };
+            doc.push('totals', acc[val.symbol])
+          }
+          acc[val.symbol].realizedpl += Number(val.realizedpl);
+          acc[val.symbol].buy_total += Number(val.buy_total);
+
+          return acc;
+        }, {});
+      }
+
+      _relizedTotal(){
+        var totalbuy = this.transactions.reduce((a, b) => a + Number(b.buy_total), 0)
+        var totalpl = this.transactions.reduce((a, b) => a + Number(b.realizedpl), 0)
+        var winCount = this.transactions.filter((a) => a.winloss == "WIN").length
+        var lossCount = this.transactions.filter((a) => a.winloss == "LOSS").length
+
+
+        this.relizedTotal =  {
+          pl: "$"+totalpl.toFixed(2).toString(),
+          plpercent: ((totalpl / totalbuy) * 100).toFixed(3).toString() + "%",
+          status: this._calcHowMuchWinning(((totalpl / totalbuy) * 100)),
+          winCount: winCount,
+          lossCount: lossCount
+        }
+        
+        
+
+      }
+      _calcHowMuchWinning(val){
+        //Warren Buffet avg returns
+        if(val >= 21){return "WINNING HARD"}
+        //Ray Dalio- Brdigewater avg returns 
+        if(val >= 12){ return "PRO WINNING"}
+        //avg yearly returns for S&P 500
+        if (val >= 9.8){ return "WINNING"}
+
+        if (val > 0){ return "WINNING A LITTLE"}
+        if (val = 0){ return "BROKE EVEN"}
+        if (val < 0){ return "LOSING"}
+        if (val <= -5){ return "LOSING HARD"}
+      }
+
+      _calcpnlpercent(pl, buytotal){
+        return ((pl / buytotal) * 100).toFixed(3)
+      }
+
+      _dividendsresponse(e){
+        this.dividends =  this.dividends.concat(e.detail.response.results)
+
+        if (e.detail.response.next != null) {
+          this.$.dividendsajax.url = e.detail.response.next;
+          this.$.dividendsajax.generateRequest();
+          return;
+        }else {
+          this.dividendstotal = '$' + this.dividends.reduce((a, b) => a + Number(b.amount), 0).toFixed(2)
+        }
+      }
+
+      _subscriptionfeesresponse(e){
+        this.subfees =  this.subfees.concat(e.detail.response.results)
+
+        if (e.detail.response.next != null) {
+          this.$.subfeesajax.url = e.detail.response.next;
+          this.$.subfeesajax.generateRequest();
+          return;
+        }else {
+          this.subfeestotal = '$' + this.subfees.reduce((a, b) => a + Number(b.amount), 0).toFixed(2)
+
+        }
+      }
+      _getInstrumentID(url) {
+        var parts = url.split("/");
+        var instrumentID = parts[parts.length - 2];
+        return instrumentID
+          
+      }
+
+      _checkIfLocal(arr, param, value){
+
+        if (arr.length > 0) {
+          var filteredArray = arr.filter(function(val) {return val[param] == value})
+          if (filteredArray.length > 0){
+            return filteredArray;
+            
+          }else {
+            return []
+          }
+        }else {
+          return []
+        }
+      }
+
+      _isNegative(val){
+        if(!val){return ""}
+        return (Math.sign(val) == -1) ? 'true': 'false';
+      };
+
+      _dateToLocal(e) {
+        return new Date(e).toLocaleDateString();
+      };
+
+      _to2decimal(val){
+        return Number(val).toFixed(2)
+      }
+
+      _round(num) {
+        if (num == null) return "N/A";
+
+        return (Math.round(num).toFixed(2));
+      }
+      dynamicSortMultiple() {
+        /*
+         * save the arguments object as it will be overwritten
+         * note that arguments object is an array-like object
+         * consisting of the names of the properties to sort by
+         */
+        var props = arguments;
+        var ds = this.dynamicSort;
+        return function(obj1, obj2) {
+          var i = 0,
+            result = 0,
+            numberOfProperties = props.length;
+          /* try getting a different result from 0 (equal)
+           * as long as we have extra properties to compare
+           */
+          while (result === 0 && i < numberOfProperties) {
+            result = ds(props[i])(obj1, obj2);
+            i++;
+          }
+          return result;
+        };
+      }
+
+      dynamicSort(property) {
+        return function(obj1, obj2) {
+          return obj1[property] > obj2[property]
+            ? 1
+            : obj1[property] < obj2[property]
+            ? -1
+            : 0;
+        };
+      }
+      
+      getHeaders() {
+        return {
+          Authorization: "Bearer " + this.token, Accept: "*/*", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"
+        };
+      }
+      _addExportForGrid(){
+        const columns = this.shadowRoot.querySelectorAll('vaadin-grid-column-group');
+        columns[0].headerRenderer  = function(root, column, rowData) {
+          var btn = "<paper-icon-button id=button style='margin: 0; padding: 0; font-size:13px; width: 35px; height: 18px; color:#30CD9A' onclick=console.log(document.querySelector('my-app').shadowRoot.getElementById('plreport')._exportGrid())  icon=file-download>Export</paper-icon-button>"
+          ///var btn = "<paper-button id=button style='margin: 0; padding: 0; font-size:13px' onclick=console.log(document.querySelector('my-app').shadowRoot.getElementById('plreport')._exportGrid())> <iron-icon style='width: 22px;height: 15px;padding: 0;' icon=file-download></iron-icon>Export</paper-button>"
+          root.innerHTML  = "<div class='layout horizontal flex'> <div class=''>" + root.textContent + "</div> <div>" + btn + "</div></div>";
+
+        };
+      }
+      _exportGrid(){
+        var arr = []
+        var columns = ['Date', 'Symbol','Qty', 'Buy Price','Sell Price', 'Buy Total', 'Sell Total','Fees','W/L','P&L', 'P&L %']
+        // push columns array
+        arr.push(columns)
+        // create array of values
+        this.transactions.forEach( i => arr.push([i.date, i.symbol, i.buy_qty, i.avg_buy_per_share, i.avg_sell_per_share, i.buy_total, i.sell_total, i.fees, i.winloss, i.realizedpl, i.realizedpl_percent ] ))
+        // Create Sheet from arrays or arrays
+        var xlsx = new NullXlsx(this.getFormattedTime() + '.xlsx').addSheetFromData(arr, 'Exit Transactions');
+        // Download file
+        xlsx.createDownloadLink().click();
+      }
+      getFormattedTime() {
+          var today = new Date();
+          var y = today.getFullYear();
+          // JavaScript months are 0-based.
+          var m = this._pad(today.getMonth() + 1);
+          var d = this._pad(today.getDate());
+          var h = this._pad(today.getHours());
+          var mi = this._pad(today.getMinutes());
+          var s = this._pad(today.getSeconds());
+          return y + "-" + m + "-" + d + "-" + h + "-" + mi + "-" + s;
+      }
+
+      _pad(n){return n<10 ? '0'+n : n}
+    }
+
+    window.customElements.define(MyPl.is, MyPl);
+  </script>
+</dom-module>

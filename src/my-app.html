@@ -34,10 +34,9 @@
 <dom-module id="my-app">
   <template>
     
-    <scary-cookie id="cookie" name="authCookie" value="{{token}}" expires="{{expiredate}}" disable-autosave></scary-cookie>
-    <!-- <scary-cookie id="cookie" name="authCookie" value="{{token}}" ></scary-cookie> -->
+    <scary-cookie id="cookie" name="authCookie" value="{{token}}" expires="[[expiredate]]" disable-autosave ></scary-cookie>
 
-    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
         --app-primary-color: #1C2229;
@@ -129,6 +128,7 @@
 
           <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list layout vertical flex" role="navigation">
             <a name="portfolio" href="[[rootPath]]portfolio"><paper-icon-button icon="trending-up"></paper-icon-button>Portfolio</a>
+            <a name="pl" href="[[rootPath]]pl"><paper-icon-button icon="assessment"></paper-icon-button>P&L</a>
             <a name="history" href="[[rootPath]]history"><paper-icon-button icon="history"></paper-icon-button>History</a>
             
             <paper-icon-button style="margin-top:15px;" class="layout horizontal self-center" icon="announcement" on-tap='_openDialog' data-id="infoDialog"></paper-icon-button>
@@ -183,6 +183,7 @@
           <my-portfolio id="portfolio" name="portfolio" token={{token}} class="flex vertical" style="height:100%"></my-portfolio>
           <my-account name="account" token={{token}}></my-account>
           <my-history id="histview" st name="history" username={{user.username}} token={{token}} style="height:100%"></my-history>
+          <my-pl id="plreport" name="pl"  token={{token}} username={{user.username}}  style="height:100%"></my-pl>
           <my-view404 name="view404"></my-view404>
           <my-help name="help"></my-help>
         </iron-pages>
@@ -261,8 +262,8 @@
       }
       _cookieExpireDate(){
         var today = moment();
-        var tomorrow = moment(today).add(1, 'days').startOf('day');
-        return tomorrow.toString()
+        var tomorrow = new Date (moment(today).add(1, 'days').startOf('day'));
+        return tomorrow.toUTCString()
       }
 
       getHeaders(val) {

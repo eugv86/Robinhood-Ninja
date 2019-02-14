@@ -18,7 +18,7 @@
 
 <dom-module id="my-help">
   <template>
-    <style include="my-app-style iron-flex iron-flex-alignment"></style>
+    <style include="iron-flex iron-flex-alignment"></style>
     <style include="shared-styles">
       :host {
         display: block;
@@ -46,7 +46,7 @@
     </style>
 
     <iron-ajax id="freshdeskajax"
-        url="https://formspree.io/support@robinhoodninja.freshdesk.com"
+        url=""
         headers= '{{headers}}'
         handle-as="json"
         method="POST"
@@ -55,14 +55,14 @@
     </iron-ajax>
 
 
-  <iron-pages id='helpPages' attr-for-selected="name" selected="order" style="height:100%">
+  <iron-pages id='helpPages' attr-for-selected="name" selected="form" style="height:100%">
     <!-- FORM ENTRY -->
-    <div name="order" class="vertical layout flex">
+    <div name="form" class="vertical layout flex">
       <h1 class="self-center">Uh-oh I must be in trouble...Talk to me! </h1>
       <paper-tabs selected="{{type}}" attr-for-selected="val" >
         <paper-tab val="Question"><iron-icon icon="help-outline" style="padding-right:10px;"></iron-icon>Question</paper-tab>
         <paper-tab val="Problem"><iron-icon icon="bug-report" style="padding-right:10px;"></iron-icon>Problem</paper-tab>
-        <paper-tab val="Feature"><iron-icon icon="lightbulb-outline" style="padding-right:10px;"></iron-icon>Feature Request</paper-tab>
+        <paper-tab val="Feature Request"><iron-icon icon="lightbulb-outline" style="padding-right:10px;"></iron-icon>Feature Request</paper-tab>
       </paper-tabs>
       <div class="layout horizontal">
         <paper-input id="txtemail" type="email" required label="Email" class="flex" value="{{email::input}}"></paper-input>
@@ -199,8 +199,8 @@
       }
 
       _closePopup() {
-
-       this.parentElement.toggle()
+        this.$.helpPages.select('form');
+        this.parentElement.toggle()
       
       }
 
@@ -210,7 +210,7 @@
       }
 
       getHeaders(val) {
-        return{"Content-Type": "application/json"}
+        return{"Content-Type": "application/json", "Authorization" : ""}
       };
     }
 

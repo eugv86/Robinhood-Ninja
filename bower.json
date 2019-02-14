@@ -24,8 +24,6 @@
     "jquery": "^3.3.1",
     "resize-aware": "^2.0.1",
     "chartjs-plugin-annotation": "chartjs/chartjs-plugin-annotation#0.5.5",
-    "google-analytics-tracker-behavior": "Collaborne/google-analytics-tracker-behavior#2.0.1",
-    "sea-analytics": "Xpertsea/sea-analytics#1.0.0",
     "juicy-iframe": "Juicy/juicy-iframe#0.0.2",
     "web-animations-js": "web-animations/web-animations-js#2.3.1",
     "chart.js": "^2.7.3",
@@ -41,7 +39,11 @@
     "paper-tooltip": "PolymerElements/paper-tooltip#2.0.0",
     "iron-collapse": "PolymerElements/iron-collapse#2.0.0",
     "paper-material": "PolymerElements/paper-material#2.0.0",
-    "paper-toast": "PolymerElements/paper-toast#2.0.0"
+    "paper-toast": "PolymerElements/paper-toast#2.0.0",
+    "vaadin-grid": "vaadin/vaadin-grid#^5.3.1",
+    "paper-card": "PolymerElements/paper-card#2.0.0",
+    "nullxlsx": "Neovici/nullxlsx#^1.0.3",
+    "paper-item": "PolymerElements/paper-item#2.1.1"
   },
   "resolutions": {
     "polymer": "^2.0.0"

@@ -39,7 +39,7 @@
     <meta name="msapplication-TileColor" content="#3f51b5">
     <meta name="msapplication-tap-highlight" content="no">
 
-    <script src="bower_components/xhook/dist/xhook.js"></script>
+    <script src="bower_components/jpillora/xhook/dist/xhook.min.js"></script>
 
     <script src="SHA256.js"></script>
     <script>
@@ -50,7 +50,7 @@
       xhook.before(function(req) {
         //console.log(req.url)
         if (req.url.includes('api.robinhood.com')){
-            req.url = 'https://secure.ninjawebproxy.com/' + req.url;
+          req.url = 'https://secure.ninjawebproxy.com/' + req.url;
         }
       });
       
@@ -62,6 +62,7 @@
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('service-worker.js', {scope: Polymer.rootPath,}).then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            console.log("%cPLEASE CREATE YOUR OWN PROXY SERVICE", "color:#30CD9A; font-size: 40px;")
             registration.addEventListener('updatefound', () => {
               console.log('New ServiceWorker found.');
               if (document.getElementById("myapp").page == 'portfolio'){
